@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import LearningPath, Step
 from .forms import LearningPathForm, StepForm
-
+from course.models import Course, Enrollment, Transaction
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from module_group.models import ModuleGroup
@@ -21,33 +21,54 @@ def learning_path_list(request):
         })
 
     module_groups = ModuleGroup.objects.all()
-    return render(request, 'learning_path/list.html', 
-        {
-            'module_groups': module_groups,
-            'learning_path_data': learning_path_data,
-         
-        })
+    return render(request, 'learning_path/list.html',
+                  {
+                      'module_groups': module_groups,
+                      'learning_path_data': learning_path_data,
+
+                  })
+
 
 @login_required
 def enroll(request, learning_path_id):
     learning_path = get_object_or_404(LearningPath, pk=learning_path_id)
+    steps = Step.objects.filter(learning_path=learning_path)
+
+    course_list = []
 
     if request.user not in learning_path.enrolled_users.all():
         learning_path.enrolled_users.add(request.user)
+        for step in steps:
+            courses = step.courses.all()  # Adjust 'courses' if the related name is different
+            course_list.extend(courses)
+        course_list = list(set(course_list))
+        for course in course_list:
+            # Use update_or_create to avoid duplicate enrollment
+            Enrollment.objects.update_or_create(
+                student=request.user,
+                course=course,
+                defaults={'is_active': True}
+            )
+            Transaction.objects.update_or_create(
+                user=request.user,
+                course=course,
+                defaults={'is_successful': True}
+            )
         # Increment recommended_count if needed
         learning_path.recommended_count += 1  # Increment count
         learning_path.save()  # Save changes to the database
         messages.success(request, f"You have successfully enrolled in {learning_path.title}.")
     else:
+        learning_path.enrolled_users.remove(request.user)
         messages.info(request, f"You are already enrolled in {learning_path.title}.")
-    
-    
+
     return redirect('learning_path:step_list', learning_path_id=learning_path.id)
+
 
 @login_required
 def duplicate(request, learning_path_id):
     original = get_object_or_404(LearningPath, pk=learning_path_id)
-    
+
     # Create a copy of the original learning path
     new_learning_path = LearningPath.objects.create(
         title=f"Copy of {original.title}",
@@ -55,7 +76,7 @@ def duplicate(request, learning_path_id):
         creator=request.user,  # Optionally set the creator to the current user
         # Copy other necessary fields here
     )
-    
+
     # Copy related steps and their associated courses
     for step in original.steps.all():
         # Create a new step instance
@@ -78,11 +99,11 @@ def duplicate(request, learning_path_id):
 @login_required
 def recommend(request, learning_path_id):
     learning_path = get_object_or_404(LearningPath, pk=learning_path_id)
-    
+
     # Assuming there is a `recommend_count` field on the LearningPath model
     learning_path.recommended_count += 1
     learning_path.save()
-    
+
     messages.success(request, f"You recommended '{learning_path.title}'!")
     return redirect('learning_path:step_list', learning_path_id=learning_path.id)
 
@@ -98,6 +119,7 @@ def learning_path_edit(request, pk):
     else:
         form = LearningPathForm(instance=learning_path, user=request.user)  # Pass the current user
     return render(request, 'learning_path/form.html', {'form': form})
+
 
 @login_required
 def learning_path_add(request):
@@ -119,20 +141,22 @@ def learning_path_delete(request, pk):
         return redirect('learning_path:learning_path_list')
     return render(request, 'learning_path/confirm_delete.html', {'learning_path': learning_path})
 
+
 @login_required
 def step_list(request, learning_path_id):
     # Retrieve the selected learning path and its steps
     learning_path = get_object_or_404(LearningPath, pk=learning_path_id)
     steps = learning_path.steps.all()
-    
+
     # Retrieve all learning paths for the sidebar
     all_learning_paths = LearningPath.objects.all()
-    
+
     return render(request, 'step/list.html', {
         'steps': steps,
         'learning_path': learning_path,
         'learning_paths': all_learning_paths  # Pass all learning paths for sidebar display
     })
+
 
 @login_required
 def step_add(request, learning_path_id):
@@ -149,6 +173,7 @@ def step_add(request, learning_path_id):
         form = StepForm()
     return render(request, 'step/form.html', {'form': form, 'learning_path': learning_path})
 
+
 @login_required
 def step_edit(request, learning_path_id, pk):
     step = get_object_or_404(Step, pk=pk)
@@ -163,6 +188,7 @@ def step_edit(request, learning_path_id, pk):
     else:
         form = StepForm(instance=step)
     return render(request, 'step/form.html', {'form': form, 'learning_path': step.learning_path})
+
 
 @login_required
 def step_delete(request, learning_path_id, pk):

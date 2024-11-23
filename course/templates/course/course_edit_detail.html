@@ -8,59 +8,54 @@
 <head>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <link rel="stylesheet" type="text/css" href="{% static 'course/course.css' %}">
 </head>
-<body id="edit-form">
-<div class="custom-container mx-auto p-8 bg-white rounded-lg shadow-xl">
-    <h2 class="text-2xl font-semibold text-teal-600 mb-4 main-color-text">Edit {{ course.course_name }}</h2>
-    <div class="tab-container">
-        <div class="tab">
-            <!-- Tab thật "Detail" -->
-            <button class="tablinks" onclick="openTab(event, 'Tab1')">Detail</button>
-            <!-- Tab giả dùng liên kết -->
-            <button class="tablinks" onclick="openTab(event, 'Tab2')">Sessions</button>
-            <button class="tablinks" onclick="openTab(event, 'Tab3')">Topic-Tags</button>
+<body>
+<div class="custom-container mx-auto p-8 bg-white rounded-lg shadow-xl" style="max-width: 87.5rem; width: 100%; margin: 0 auto;">
+    <h2 class="text-2xl font-semibold text-teal-600 mb-4" style="font-size: 3.7rem; color: #072Ac8; text-transform:uppercase">Edit {{ course.course_name }}</h2>
+    <div class="tab-container mt-4" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 0.0625rem solid #ccc;">
+        <div class="tab" style="display: flex; overflow: hidden; background-color: #ffffff;">
+            <button class="tablinks" onclick="openTab(event, 'Tab1')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Detail</button>
+            <button class="tablinks" onclick="openTab(event, 'Tab2')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Sessions</button>
+            <button class="tablinks" onclick="openTab(event, 'Tab3')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Topic-Tags</button>
             {% if sessions %}
-            <button class="tablinks" onclick="openTab(event, 'Tab4')">Course Materials</button>
+                <button class="tablinks" onclick="openTab(event, 'Tab4')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Course Materials</button>
             {% endif %}
         </div>
     </div>
-    
+
     <form method="post" class="space-y-4" enctype="multipart/form-data">
         {% csrf_token %}
-
-        <!-- Nội dung của Tab "Detail" -->
-        <div id="Tab1" class="tabcontent">
-            <div class="form-row">
+        <div id="Tab1" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;">
+            <div class="form-row" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.25rem;">
                 <div class="form-group">
-                    {{ course_form.course_name.label_tag }}
+                    <label style="color: #2b59c3;">{{ course_form.course_name.label }}</label>
                     {{ course_form.course_name|add_class:"form-control" }}
                 </div>
                 <div class="form-group">
-                    {{ course_form.course_code.label_tag }}
+                    <label style="color: #2b59c3;">{{ course_form.course_code.label }}</label>
                     {{ course_form.course_code|add_class:"form-control" }}
                 </div>
                 <div class="form-group">
-                    {{ course_form.creator.label_tag }}
+                    <label style="color: #2b59c3;">{{ course_form.creator.label }}</label>
                     {{ course_form.creator|add_class:"form-control" }}
                 </div>
                 <div class="form-group">
-                    {{ course_form.instructor.label_tag }}
+                    <label style="color: #2b59c3;">{{ course_form.instructor.label }}</label>
                     {{ course_form.instructor|add_class:"form-control" }}
                 </div>
             </div>
-            <div class="form-row">
+            <div class="form-row" style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
                 <div class="form-group">
-                    {{ course_form.description.label_tag }}
+                    <label style="color: #2b59c3;">{{ course_form.description.label }}</label>
                     {{ course_form.description|add_class:"form-control description-input" }}
                 </div>
                 <div class="form-group">
-                    <h3>Course Image</h3>
+                    <h3 style="color: #2b59c3;">Course Image</h3>
                     {% if course.image %}
-                        <img src="{{ course.image.url }}" alt="{{ course.course_name }}" style="max-width: 200px;">
+                        <img src="{{ course.image.url }}" alt="{{ course.course_name }}" style="max-width: 12.5rem;">
                         <br>
                         <input type="hidden" name="delete_image" value="on">
-                        <button type="submit" name="action" value="delete_image" class="btn btn-danger">Clear Image</button>
+                        <button type="submit" name="action" value="delete_image" class="btn btn-danger" style="margin-top: 1rem; margin-bottom: 1rem;">Clear Image</button>
                     {% else %}
                         <p>No image uploaded yet.</p>
                     {% endif %}
@@ -68,10 +63,10 @@
                     {{ course_form.image.label_tag }}
                     <input type="file" name="image" class="form-control-file" id="id_image">
                 </div>
-                <div class="form-group" style="flex: 1;">
-                    <h3>Prerequisite Courses</h3>
+                <div class="form-group">
+                    <h3 style="color: #2b59c3;">Prerequisite Courses</h3>
                     <div class="mb-4">
-                        <select name="prerequisite_courses" class="w-full p-2 border border-gray-300 rounded select2" multiple>
+                        <select name="prerequisite_courses" class="form-select select2" multiple>
                             {% if prerequisites %}
                                 {% for prereq in prerequisites %}
                                     <option value="{{ prereq.id }}" selected>{{ prereq.course_name }}</option>
@@ -85,20 +80,27 @@
                     <input type="hidden" name="deleted_prerequisite_ids" id="delete-prerequisite-ids">
                 </div>
             </div>
+            <!-- Added fields for Price and Discount -->
+            <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
+                <div class="form-group">
+                    <h3 style="color: #2b59c3;">Price</h3>
+                    {{ course_form.price|add_class:"form-control" }}
+                </div>
+                <div class="form-group">
+                    <h3 style="color: #2b59c3;">Discount</h3>
+                    {{ course_form.discount|add_class:"form-control" }}
+                </div>
+            </div>
         </div>
-        
-        <div id="Tab2" class="tabcontent"></div>
-        
-        <!-- Nội dung của Tab3: Topic-Tags -->
-        <div id="Tab3" class="tabcontent"></div>
-        
-        <!-- Nội dung của Tab4: Course Materials -->
-        <div id="Tab4" class="tabcontent"> </div>
-        <div style="display: flex; justify-content: flex-start; margin-top: 20px;">
-            <button type="submit" class="btn btn-primary" style="background-color: #389bb0; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0 20px; margin-right: 10px;">
+
+        <div id="Tab2" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
+        <div id="Tab3" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
+        <div id="Tab4" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
+        <div style="display: flex; justify-content: flex-start; margin-top: 1.25rem; float:right;">
+            <button type="submit" class="btn btn-primary" style="background-color: #6eb2df; height: 2.5rem; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem; margin-right: 0.625rem;">
                 Save
             </button>
-            <a href="{% url 'course:course_list' %}" style="background-color: gray; color: white; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0 20px; text-decoration: none;">
+            <a href="{% url 'course:course_list' %}" style="background-color: gray; color: white; height: 2.5rem; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem; text-decoration: none;">
                 Return to Course List
             </a>
         </div>
@@ -143,6 +145,8 @@
         } else {
             // Hiển thị tab được chọn và gán lớp "active" cho nút nhấn
             document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.style.backgroundColor = "#6eb2df";
+            evt.currentTarget.style.color = "white";
             evt.currentTarget.className += " active";
 
             // Lưu lại tab đang hoạt động trong localStorage để giữ trạng thái khi tải lại trang

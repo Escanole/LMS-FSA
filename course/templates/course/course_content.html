@@ -105,6 +105,55 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
+    function getCSRFToken() {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, 10) === 'csrftoken=') {
+                    cookieValue = decodeURIComponent(cookie.substring(10));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Function to save end time when navigating away from the page
+    function saveEndTimeOnNavigation(materialId) {
+        if (materialId) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "course:end_viewing_ajax" %}', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('X-CSRFToken', getCSRFToken());  // Add CSRF token here
+            xhr.send(JSON.stringify({
+                'material_id': materialId
+            }));
+        }
+    }
+
+    // Handle navigation away (on link click)
+    $(document).on('click', '.nav-link, .list-group-item a', function(e) {
+        var materialId = '{{ current_material.id }}'; // Get current material id
+        saveEndTimeOnNavigation(materialId); // Send end time on material navigation
+    });
+
+    // Handle page unload (when leaving or refreshing the page)
+    window.addEventListener('beforeunload', function(event) {
+        var materialId = '{{ current_material.id }}'; // Get current material ID
+        if (materialId) {
+            // Make an AJAX request to save the end time before leaving the page
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '{% url "course:end_viewing_ajax" %}', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.setRequestHeader('X-CSRFToken', getCSRFToken());  // Add CSRF token here
+            xhr.send(JSON.stringify({
+                'material_id': materialId
+            }));
+        }
+    });
+
     // Ensure the session tabs are visible
     // $('#session-tabs').show();
 

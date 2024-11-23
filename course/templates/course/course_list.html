@@ -50,6 +50,18 @@
                 <div class="card-body">
                     <h5 class="card-title main-color-text">{{ course.course_name }}</h5>
                     <p class="card-text text-muted">{{ course.description|truncatewords:20 }}</p>
+                    <p class="card-text main-color-text"><strong>Price: </strong>
+                        {% if course.discount > 0 %}
+                            <span class="original-price" style='text-decoration: line-through;color: grey;'>{{ course.price }}$</span>
+                            <span class="discounted-price" style="color: red;font-weight: bold;">{{ course.discounted_price }}$</span>
+                        {% else %}
+                            {% if course.price %}
+                                {{ course.price }}$
+                            {% else %}
+                                Free
+                            {% endif %}
+                        {% endif %}
+                    </p>
 
                     {% if not is_instructor %}
                         <!-- Completion Progress Bar -->
@@ -64,27 +76,33 @@
                 <!-- Card Footer -->
                 <div class="card-footer bg-white d-flex justify-content-between align-items-center">
                     <a href="{% url 'course:course_detail' course.id %}" class="btn main-color btn-sm" title="View Details">
-                        <i class="fas fa-eye"></i> View
+                        <i class="fas fa-eye"></i>
                     </a>
+
                     {% if user.is_superuser or course.instructor == user %}
                         <div>
                             <a href="{% url 'course:course_edit_detail' course.id %}" class="btn btn-warning btn-sm me-2" title="Edit">
                                 <i class="fas fa-edit"></i>
                             </a>
+
+                            <!-- Duplicate Button as an Icon Only -->
+                            <a href="?duplicate_course_id={{ course.id }}" class="btn btn-secondary btn-sm me-2" title="Duplicate">
+                                <i class="fas fa-copy"></i> <!-- Only the copy icon, no text -->
+                            </a>
+
                             <a href="{% url 'course:course_delete' course.id %}" class="btn btn-danger btn-sm me-2" title="Delete">
                                 <i class="fas fa-trash-alt"></i>
                             </a>
 
                             {% if course.published %}
-                                <a href="{% url 'course:toggle_publish' course.pk %}" class="btn btn-secondary" >Unpublish</a>
+                                <a href="{% url 'course:toggle_publish' course.pk %}" class="btn btn-secondary">Unpublish</a>
                             {% else %}
                                 <a href="{% url 'course:toggle_publish' course.pk %}" class="btn btn-primary" style="background-color: #097969 !important;">Publish</a>
-
                             {% endif %}
-
                         </div>
                     {% endif %}
                 </div>
+
             </div>
         </div>
         {% empty %}

@@ -3,6 +3,17 @@ from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from .models import ReadingMaterial, CourseMaterial, Course
 from django.core.files.storage import default_storage
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from .models import SessionCompletion, Course
+
+# ngattt
+@receiver(post_save, sender=SessionCompletion)
+def generate_certificate_if_course_complete(sender, instance, created, **kwargs):
+    course = instance.course
+    user = instance.user
+    course.check_and_generate_certification(user)
+#end of ngattt
 
 @receiver(post_delete, sender=ReadingMaterial)
 def auto_delete_reading_material_on_delete(sender, instance, **kwargs):

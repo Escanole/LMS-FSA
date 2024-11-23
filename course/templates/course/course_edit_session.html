@@ -8,78 +8,79 @@
 <head>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <link rel="stylesheet" type="text/css" href="{% static 'course/course.css' %}">
 </head>
-<body id="edit-form">
-<div class="custom-container mx-auto p-8 bg-white rounded-lg shadow-xl">
-    <h2 class="text-2xl font-semibold text-teal-600 mb-4 main-color-text">Edit {{ course.course_name }}</h2>
-        <div class="tab-container">
-            <div class="tab">
-                <button class="tablinks" onclick="openTab(event, 'Tab1')">Detail</button>
-                <button class="tablinks" onclick="openTab(event, 'Tab2')">Sessions</button>
-                <button class="tablinks" onclick="openTab(event, 'Tab3')">Topic-Tags</button>
-                {% if sessions %}
-                    <button class="tablinks" onclick="openTab(event, 'Tab4')">Course Materials</button>
-                {% endif %}
-            </div>
+<body>
+<div class="custom-container mx-auto p-8 bg-white rounded-lg shadow-xl" style="max-width: 87.5rem; width: 100%; margin: 0 auto;">
+    <h2 class="text-2xl font-semibold text-teal-600 mb-4" style="font-size: 3.7rem; color: #072Ac8; text-transform: uppercase;">
+        Edit {{ course.course_name }}
+    </h2>
+    <div class="tab-container mt-4" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 0.0625rem solid #ccc;">
+        <div class="tab" style="display: flex; overflow: hidden; background-color: #ffffff;">
+            <button class="tablinks" onclick="openTab(event, 'Tab1')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Detail</button>
+            <button class="tablinks" onclick="openTab(event, 'Tab2')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Sessions</button>
+            <button class="tablinks" onclick="openTab(event, 'Tab3')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Topic-Tags</button>
+            {% if sessions %}
+                <button class="tablinks" onclick="openTab(event, 'Tab4')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Course Materials</button>
+            {% endif %}
         </div>
+    </div>
 
-        <form method="post" class="space-y-4" enctype="multipart/form-data">
+    <form method="post" class="space-y-4" enctype="multipart/form-data">
         {% csrf_token %}
-        
+
         <!-- Tab1 (Detail) - Link to course_edit_detail -->
-        <div id="Tab1" class="tabcontent"></div>
+        <div id="Tab1" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
 
         <!-- Tab2 (Session) - Session Form -->
-        <div id="Tab2" class="tabcontent">
+        <div id="Tab2" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;">
             <!-- Warning message -->
             <div class="alert alert-warning" role="alert">
                 Note: You can't delete sessions that have materials.
             </div>
             <!-- First column: Sessions -->
-            <div class="form-group" style="flex: 1;">
-                <h3>Manage Sessions</h3>
-                <div style="display: flex; flex-direction: column;">
-                <ul id="sessions-container" class="sortable" style="padding: 0; list-style-type: None;">
-                    {% for session in sessions %}
-                        <li class="session-item" data-id="{{ session.id }}">
-                            <input type="text" name="session_names" value="{{ session.name }}" class="form-control">
-                            <input type="hidden" name="session_ids" value="{{ session.id }}">
-                            {% if session.materials.count == 0 %}
-                                <button type="button" class="delete-session" data-id="{{ session.id }}">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            {% endif %}
-                        </li>
-                    {% endfor %}
-                </ul>
-                <input type="hidden" name="delete_session_ids" id="delete-session-ids">
-                <input type="hidden" name="session_order" id="session-order">
+            <div class="form-group">
+                <h3 style="color: #2b59c3;">Manage Sessions</h3>
+                <div style="display: flex; flex-direction: column; max-width: 37.5rem;">
+                    <ul id="sessions-container" class="sortable" style="padding: 0; list-style-type: none;">
+                        {% for session in sessions %}
+                            <li class="session-item" data-id="{{ session.id }}" style="display: flex; align-items: center; margin-bottom: 0.625rem; gap: 0.625rem;">
+                                <input type="text" name="session_names" value="{{ session.name }}" class="form-control" style="flex: 1; max-width: 31.25rem;">
+                                <input type="hidden" name="session_ids" value="{{ session.id }}">
+                                {% if session.materials.count == 0 %}
+                                    <button type="button" class="delete-session" data-id="{{ session.id }}" style="background: none; border: none; color: #dc3545; padding: 0.3125rem; cursor: pointer;">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <input type="hidden" name="delete_session_ids" id="delete-session-ids">
+                    <input type="hidden" name="session_order" id="session-order">
                 </div>
 
                 <!-- Add New Sessions -->
-                <div id="new-sessions-container"></div>
-                <button type="button" id="add-new-session" class="btn btn-secondary">
+                <div id="new-sessions-container" style="display: flex; flex-direction: column; max-width: 37.5rem;"></div>
+                <button type="button" id="add-new-session" class="btn btn-secondary" style="margin-top: 0.625rem;">
                     <i class="fas fa-plus"></i>
                 </button>
             </div>
         </div>
 
-        <div id="Tab3" class="tabcontent"></div>
+        <div id="Tab3" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
 
         <!-- Tab4 (Course Materials) -->
-        <div id="Tab4" class="tabcontent"></div>
-
-        <div style="display: flex; justify-content: flex-start; margin-top: 20px;">
-            <button type="submit" class="btn btn-primary" style="background-color: #389bb0; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0 20px; margin-right: 10px;">
+        <div id="Tab4" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
+        <div style="display: flex; justify-content: flex-start; margin-top: 1.25rem; float: right;">
+            <button type="submit" class="btn btn-primary" style="background-color: #6eb2df; height: 2.5rem; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem; margin-right: 0.625rem;">
                 Save
             </button>
-            <a href="{% url 'course:course_list' %}" style="background-color: gray; color: white; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0 20px; text-decoration: none;">
+            <a href="{% url 'course:course_list' %}" style="background-color: gray; color: white; height: 2.5rem; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem; text-decoration: none;">
                 Return to Course List
             </a>
         </div>
     </form>
 </div>
+</body>
 {% endblock %}
 
 {% block extra_js %}
@@ -118,6 +119,8 @@
         } else {
             // Hiển thị tab được chọn và gán lớp "active" cho nút nhấn
             document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.style.backgroundColor = "#6eb2df";
+            evt.currentTarget.style.color = "white";
             evt.currentTarget.className += " active";
 
             // Lưu lại tab đang hoạt động trong localStorage để giữ trạng thái khi tải lại trang
@@ -153,9 +156,9 @@
         $('#add-new-session').click(function() {
             newSessionCount++;
             const newSessionHtml = `
-                <div class="session-item new-session">
-                    <input type="text" name="new_session_names" class="form-control" placeholder="New Session Name">
-                    <button type="button" class="delete-session">
+                <div class="session-item new-session" style="display: flex; align-items: center; margin-bottom: 0.625rem; gap: 0.625rem;">
+                    <input type="text" name="new_session_names" class="form-control" placeholder="New Session Name" style="flex: 1; max-width: 31.25rem;">
+                    <button type="button" class="delete-session" style="background: none; border: none; color: #dc3545; padding: 0.3125rem; cursor: pointer;">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>

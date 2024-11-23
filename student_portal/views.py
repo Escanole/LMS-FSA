@@ -15,13 +15,15 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
+
 @login_required
 def course_content(request, pk, session_id=None):
     course = get_object_or_404(Course, pk=pk)
     sessions = Session.objects.filter(course=course).order_by('order')
 
     # Select the first session if no session_id is provided
-    selected_session_id = session_id or request.POST.get('session_id') or sessions.first().id if sessions.exists() else None
+    selected_session_id = session_id or request.POST.get(
+        'session_id') or sessions.first().id if sessions.exists() else None
 
     # Get the current session or default to the first available session
     current_session = get_object_or_404(Session, id=selected_session_id) if selected_session_id else None
@@ -31,7 +33,8 @@ def course_content(request, pk, session_id=None):
     file_id = request.GET.get('file_id')
     file_type = request.GET.get('file_type')
     if file_id and file_type and current_session:
-        current_material = CourseMaterial.objects.filter(id=file_id, material_type=file_type, session=current_session).first()
+        current_material = CourseMaterial.objects.filter(id=file_id, material_type=file_type,
+                                                         session=current_session).first()
     else:
         current_material = materials.first() if materials.exists() else None
 
@@ -40,7 +43,8 @@ def course_content(request, pk, session_id=None):
     next_session = None
     if not next_material and current_session:
         next_session = Session.objects.filter(course=course, order__gt=current_session.order).order_by('order').first()
-        next_material = CourseMaterial.objects.filter(session=next_session).order_by('order').first() if next_session else None
+        next_material = CourseMaterial.objects.filter(session=next_session).order_by(
+            'order').first() if next_session else None
 
     # Determine content type and preview content
     content_type = None
@@ -144,21 +148,23 @@ def toggle_completion(request, pk):
         'next_item_id': next_item_id,
         'next_session_id': next_session_id
     })
+
+
 # @login_required
 # def course_list(request):
 #     # Retrieve all published courses initially
 #     courses = Course.objects.filter(published=True)
 #     query = request.GET.get('q')
-    
+
 #     # Fetch enrolled courses for the student
 #     enrolled_courses = Enrollment.objects.filter(student=request.user).values_list('course', flat=True)
 #     enrolled_courses_list = Course.objects.filter(id__in=enrolled_courses, published=True)
-    
+
 #     # If a search query is present, filter the courses based on the search
 #     if query:
 #         courses = courses.filter(Q(course_name__icontains=query) | Q(description__icontains=query))
 #         enrolled_courses_list = enrolled_courses_list.filter(Q(course_name__icontains=query) | Q(description__icontains=query))
-    
+
 #     # Combine enrolled courses with other filtered courses, removing duplicates
 #     courses = list(enrolled_courses_list) + [course for course in courses if course not in enrolled_courses_list]
 
@@ -197,20 +203,21 @@ def toggle_completion(request, pk):
 #     })
 
 
-def course_list(request): 
+def course_list(request):
     # Retrieve all published courses
     courses = Course.objects.filter(published=True)
     query = request.GET.get('q')
-    
+
     # Fetch enrolled courses for the student
     enrolled_course_ids = Enrollment.objects.filter(student=request.user).values_list('course', flat=True)
     enrolled_courses_list = Course.objects.filter(id__in=enrolled_course_ids, published=True)
-    
+
     # If a search query is present, filter the courses
     if query:
         courses = courses.filter(Q(course_name__icontains=query) | Q(description__icontains=query))
-        enrolled_courses_list = enrolled_courses_list.filter(Q(course_name__icontains=query) | Q(description__icontains=query))
-    
+        enrolled_courses_list = enrolled_courses_list.filter(
+            Q(course_name__icontains=query) | Q(description__icontains=query))
+
     # Combine enrolled courses with other filtered courses, removing duplicates
     courses = list(enrolled_courses_list) + [course for course in courses if course not in enrolled_courses_list]
 
@@ -238,7 +245,7 @@ def course_list(request):
             recommended_course.save()
 
     # Pagination setup
-    paginator = Paginator(courses, 6)  # Show 6 courses per page
+    paginator = Paginator(courses, 9)  # Show 6 courses per page
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -250,6 +257,7 @@ def course_list(request):
         'courses': page_obj,
         'recommended_courses': [rc.course for rc in recommended_courses],
     })
+
 
 @login_required
 def course_detail(request, pk):
@@ -326,11 +334,11 @@ def course_detail(request, pk):
 @login_required
 def course_content2(request, pk):
     print('come here')
-    
+
     # Retrieve the course by primary key
     course = get_object_or_404(Course, pk=pk)
     print(course)
-    
+
     print('ab=')
     # Retrieve all sessions for this course, ordered by 'order'
     sessions = Session.objects.filter(course=course)
@@ -338,7 +346,7 @@ def course_content2(request, pk):
     print(sessions)
     # Attempt to get `session_id` from POST; if not present, it's set to None
     selected_session_id = request.POST.get('session_id') or None
-    
+
     # Determine the current session based on `session_id` or default to the first session
     if selected_session_id:
         # If session_id is provided, try to retrieve the session
@@ -351,7 +359,7 @@ def course_content2(request, pk):
     if current_session is None:
         # Redirect to an error page or show a message if needed
         return render(request, 'courses/error.html', {'message': 'No sessions available for this course.'})
-    
+
     # Retrieve course materials for the current session
     materials = CourseMaterial.objects.filter(session=current_session).order_by('order')
 
@@ -435,6 +443,7 @@ def course_content2(request, pk):
 
     return render(request, 'courses/course_content.html', context)
 
+
 @login_required
 def instructor_profile(request, instructor_id):
     # Get the instructor based on the instructor ID
@@ -459,12 +468,14 @@ def instructor_profile(request, instructor_id):
 
     return render(request, 'instructor_profile.html', context)
 
+
 @login_required
 def enroll(request, pk):
     course = get_object_or_404(Course, id=pk)
     Enrollment.objects.get_or_create(student=request.user, course=course)
     messages.success(request, f"You have successfully enrolled in {course.course_name}.")
     return redirect('student_portal:course_detail', pk=course.id)
+
 
 @login_required
 def unenroll(request, pk):
@@ -473,7 +484,7 @@ def unenroll(request, pk):
 
     # Attempt to delete the enrollment for the current user
     enrollment = Enrollment.objects.filter(student=request.user, course=course).first()
-    
+
     if enrollment:
         enrollment.delete()
         messages.success(request, f"You have successfully unenrolled from {course.course_name}.")

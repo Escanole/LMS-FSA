@@ -4,13 +4,10 @@
 {% block title %}Reorder Materials - {{ course.course_name }}{% endblock %}
 
 {% block content %}
-<head>
-    <link rel="stylesheet" type="text/css" href="{% static 'course/course.css' %}">
-</head>
-<body id="reorder-material">
+<body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.14.0/Sortable.min.js"></script>
 <div class="container mt-5">
-    <h1 style="color: #389bb0;">Reorder Materials for Course: {{ course.course_name }}</h1>
+    <h1 style="font-size: 3rem; color: #072Ac8; text-transform:uppercase;">Reorder Materials  {{ course.course_name }}</h1>
 
     <form method="POST">
         {% csrf_token %}
@@ -19,7 +16,7 @@
             <!-- Session Selection Dropdown (Left) -->
             <div class="col-md-3">
                 <h3>Select Session</h3>
-                <select name="session_id" id="session-select" onchange="this.form.submit()" class="form-control form-control-sm" style="width: 100%; max-width: 200px;">
+                <select name="session_id" id="session-select" onchange="this.form.submit()" class="form-control form-control-sm" style="width: 100%; max-width: 10rem;">
                     <option value="" disabled>Select a session</option>
                     {% for session in sessions %}
                         <option value="{{ session.id }}"
@@ -36,11 +33,11 @@
             <!-- Materials List (Right) -->
             <div class="col-md-9">
                 <h3>Reorder Materials</h3>
-                <ul id="materials-list" class="list-group mb-3">
+                <ul id="materials-list" class="list-group mb-3 p-3 border rounded overflow-auto" style="max-height: 80vh; border-color: #e6f2f2;">
                     {% for material in materials %}
-                        <li class="list-group-item" data-id="{{ material.id }}">
+                        <li class="list-group-item d-flex align-items-center" style="padding: 10px; border-top: 1px solid #e6f2f2; {% if forloop.last %}border-bottom: none;{% endif %}" data-id="{{ material.id }}">
+                            <span class="material-handle me-2">☰</span>
                             <span>{{ material.title }}</span>
-                            <span class="material-handle">☰</span>
                             <input type="hidden" name="order_{{ material.id }}" id="order_{{ material.id }}" value="{{ material.order }}">
                         </li>
                     {% endfor %}
@@ -50,11 +47,9 @@
 
         <!-- Buttons aligned with "Select Session" -->
         <div class="row">
-            <div class="col-md-4">
-                <div class="d-flex">
-                    <button type="submit" class="btn btn-primary mr-2" name="order">Update Order</button>
-                    <a href="{% url 'course:course_edit_detail' course.id %}" class="btn btn-secondary">Back to Course Details</a>
-                </div>
+            <div class="button-group" style="display: flex; justify-content: flex-end;margin-top: 1.5rem; margin-left: 0.2cm; gap:1rem;">
+                <button type="submit" class="btn btn-primary mr-2" name="order">Update Order</button>
+                <a href="{% url 'course:course_edit_detail' course.id %}" class="btn btn-secondary">Back to Course Details</a>
             </div>
         </div>
     </form>

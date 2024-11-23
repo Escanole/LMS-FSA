@@ -1,29 +1,31 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="mt-4">
-    <!-- Nút Back -->
-    <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary mb-3">Back to Reports</a>
-</div>
 <ul class="nav nav-tabs">
     <li class="nav-item">
         <a class="nav-link active" href="{% url 'reports:user_overview_report' %}">User Overview </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:student_id_report' %}">Student ID</a>
+        <a class="nav-link" href="{% url 'reports:student_id_report' %}">Student ID</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:role_report' %}">Role</a>
+        <a class="nav-link" href="{% url 'reports:role_report' %}">Role</a>
     </li>   
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_statistics_report' %}">User Statistics</a>
+        <a class="nav-link" href="{% url 'reports:user_statistics_report' %}">User Statistics</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:login_frequency_report' %}">Login Frequency</a>
+        <a class="nav-link" href="{% url 'reports:login_frequency_report' %}">Login Frequency</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_duration_login' %}">User Duration Login</a>
+        <a class="nav-link" href="{% url 'reports:user_duration_login' %}">User Duration Login</a>
+    </li>
+    
+    <!-- Nút Back to Reports với ms-auto để căn sang phải -->
+    <li class="nav-item ms-auto">
+        <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary">Back to Reports</a>
     </li>
 </ul>
+
 <div class="container mt-4">
     <h1 class="text-center mb-4">User Overview Report</h1>
     <table class="table table-bordered">

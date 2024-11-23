@@ -1,6 +1,6 @@
-from django.shortcuts import render
-from course.models import Course, Enrollment, Session, Completion, Tag, CourseMaterial
-from django.db.models import Count
+from django.shortcuts import render, get_object_or_404
+from course.models import Course, Enrollment, Session, Completion, Tag, CourseMaterial, MaterialViewingDuration
+from django.db.models import Count, F, Q, Sum
 from module_group.models import ModuleGroup
 from user.models import User, Student, Profile
 from collections import Counter
@@ -11,10 +11,13 @@ from datetime import datetime, timedelta
 from django.utils.dateparse import parse_date
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.utils.dateformat import DateFormat
 from django.shortcuts import render
-import plotly.graph_objs as go
-from django.utils.timezone import make_aware
+from django.http import Http404
+from collections import defaultdict
+import calendar
+import json
+
+
 @login_required
 def user_duration_login(request):
     user = request.user
@@ -38,15 +41,15 @@ def user_duration_login(request):
         if logout_time:
             # Tính toán thời gian phiên
             duration = logout_time - login_time
-            
+
             # Định dạng lại thời gian phiên thành chuỗi "X days, Y hours, Z minutes"
             days, seconds = duration.days, duration.seconds
             hours = seconds // 3600
             minutes = (seconds // 60) % 60
-            
+
             formatted_duration = f"{days} days, {hours} hours, {minutes} minutes"
             total_minutes = duration.total_seconds() // 60  # Tính tổng phút
-            
+
             session_durations.append({
                 'login_time': login_time,
                 'logout_time': logout_time,
@@ -54,9 +57,10 @@ def user_duration_login(request):
                 'total_minutes': total_minutes,  # Lưu trữ tổng phút
             })
     session_durations = session_durations[-10:]
-    return render(request, 'reports/user_duration_login.html', {
+    return render(request, 'reports/user/user_duration_login.html', {
         'session_durations': session_durations,
     })
+
 
 @login_required
 def login_frequency_report(request):
@@ -99,7 +103,7 @@ def login_frequency_report(request):
     title = "Login frequency in the last 30 days"
     back_to_month = False
 
-    return render(request, 'reports/login_frequency_report.html', {
+    return render(request, 'reports/user/login_frequency_report.html', {
         'times': times,
         'counts': counts,
         'title': title,
@@ -108,6 +112,7 @@ def login_frequency_report(request):
         'to_date': to_date,
         'back_to_month': back_to_month,
     })
+
 
 @login_required
 def user_statistics_report(request):
@@ -154,16 +159,18 @@ def user_statistics_report(request):
     # Truy vấn tất cả người dùng đăng nhập trong tháng hiện tại
     users = User.objects.filter(date_joined__gte=start_of_month, is_superuser=False)
 
-    return render(request, 'reports/user_statistics_report.html', 
-    {
-        'module_groups': module_groups,
-        'login_dates': login_dates,
-        'user_counts': user_counts,
-        'current_month': current_month,
-        'users': users,
-        'selected_users': selected_users,
-        'selected_date': login_date_str  # Truyền ngày đã chọn
-    })
+    return render(request, 'reports/user/user_statistics_report.html',
+                  {
+                      'module_groups': module_groups,
+                      'login_dates': login_dates,
+                      'user_counts': user_counts,
+                      'current_month': current_month,
+                      'users': users,
+                      'selected_users': selected_users,
+                      'selected_date': login_date_str  # Truyền ngày đã chọn
+                  })
+
+
 def student_id_report(request):
     students = Student.objects.all()
     student_cohorts = {}
@@ -194,7 +201,8 @@ def student_id_report(request):
         'cohort_summary': cohort_summary,
     }
 
-    return render(request, 'reports/student_id_report.html', context)
+    return render(request, 'reports/user/student_id_report.html', context)
+
 
 def get_students_by_cohort(request, cohort):
     """Lấy danh sách sinh viên theo cohort cho yêu cầu AJAX"""
@@ -202,43 +210,50 @@ def get_students_by_cohort(request, cohort):
     student_data = [{"name": student.user.username, "student_code": student.student_code} for student in students]
     return JsonResponse(student_data, safe=False)
 
+
 def role_report(request):
     # Lấy số lượng người dùng theo vai trò
-    role_counts = Profile.objects.values('role__role_name').annotate(user_count=Count('user')).order_by('role__role_name')
+    role_counts = Profile.objects.values('role__role_name').annotate(user_count=Count('user')).order_by(
+        'role__role_name')
 
     context = {
         'role_counts': role_counts,
     }
 
-    return render(request, 'reports/role_report.html', context)
+    return render(request, 'reports/user/role_report.html', context)
+
+
 @login_required
 def user_overview_report(request):
     # Lấy tất cả người dùng (trừ superusers)
     users = User.objects.exclude(is_superuser=True)
-    
-    return render(request, 'reports/user_overview_report.html', {'users': users})
+
+    return render(request, 'reports/user/user_overview_report.html', {'users': users})
+
 
 @login_required
 def report_dashboard(request):
     module_groups = ModuleGroup.objects.all()
-    return render(request, 'reports/dashboard_report.html', 
-    {
-        'module_groups': module_groups,
-    })
+    return render(request, 'reports/dashboard_report.html',
+                  {
+                      'module_groups': module_groups,
+                  })
 
 
 @login_required
 def course_overview_report(request):
     module_groups = ModuleGroup.objects.all()
     courses = Course.objects.all()
-    return render(request, 'reports/course_overview_report.html', 
-    {'courses': courses, 'module_groups': module_groups,
-    })
+    return render(request, 'reports/course_overview_report.html',
+                  {'courses': courses, 'module_groups': module_groups,
+                   })
+
 
 @login_required
 def student_enrollment_report(request):
     enrollments = Enrollment.objects.select_related('student', 'course').all()
     return render(request, 'reports/student_enrollment_report.html', {'enrollments': enrollments})
+
 
 @login_required
 def course_completion_report(request):
@@ -246,38 +261,152 @@ def course_completion_report(request):
     course_progress = {course: course.get_completion_percent(user) for course in Course.objects.all()}
     return render(request, 'reports/course_completion_report.html', {'course_progress': course_progress})
 
+
 @login_required
 def session_overview_report(request):
     sessions = Session.objects.select_related('course').all()
     return render(request, 'reports/session_overview_report.html', {'sessions': sessions})
+
 
 @login_required
 def material_usage_report(request):
     completions = Completion.objects.select_related('session', 'material', 'user').all()
     return render(request, 'reports/material_usage_report.html', {'completions': completions})
 
+
+def get_quarter(month):
+    if 1 <= month <= 3:
+        return 1
+    elif 4 <= month <= 6:
+        return 2
+    elif 7 <= month <= 9:
+        return 3
+    else:
+        return 4
+
+
 @login_required
 def enrollment_trends_report(request):
-    today = timezone.now()
-    
-    # Querying enrollments and annotating with count
-    enrollments = (
-        Enrollment.objects
-        .filter(date_enrolled__month=today.month)
-        .values('course__course_name')  # Get the course name by following the ForeignKey relationship
-        .annotate(count=Count('id'))
+    all_courses = Course.objects.all()
+
+    # Get current year and month if not specified
+    current_date = timezone.now()
+    year = int(request.GET.get('year', current_date.year))
+    month = request.GET.get('month')  # Optional month filter
+
+    # Get course_id from request, default to first course if none selected
+    course_id = request.GET.get('course_id')
+    if not course_id and all_courses.exists():
+        course_id = all_courses.first().id
+    elif not all_courses.exists():
+        raise Http404("No courses available.")
+
+    course = get_object_or_404(Course, pk=course_id)
+
+    # Initialize data dictionaries
+    enrollment_data = {month: 0 for month in range(1, 13)}
+    unenrollment_data = {month: 0 for month in range(1, 13)}
+    weekly_enrollment_data = defaultdict(int)
+    weekly_unenrollment_data = defaultdict(int)
+
+    # Base query for enrollments
+    enrollments_query = Enrollment.objects.filter(
+        course_id=course_id,
+        date_enrolled__year=year,
+        is_active=True
     )
 
-    return render(request, 'reports/enrollment_trends_report.html', {'enrollments': enrollments})
+    unenrollments_query = Enrollment.objects.filter(
+        course_id=course_id,
+        date_enrolled__year=year,
+        is_active=False
+    )
+
+    if month:
+        # If month is selected, show weekly data for that month
+        month = int(month)
+        enrollments_query = enrollments_query.filter(date_enrolled__month=month)
+        unenrollments_query = unenrollments_query.filter(date_enrolled__month=month)
+
+        _, num_days = calendar.monthrange(year, month)
+        week_ranges = []
+        weekly_enrollment_data = {}
+        weekly_unenrollment_data = {}
+
+        current_start = 1
+        while current_start <= num_days:
+            current_end = min(current_start + 6, num_days)  # 7-day week
+            week_label = f"Day {current_start}-{current_end}"
+            week_ranges.append((current_start, current_end))
+            weekly_enrollment_data[week_label] = 0
+            weekly_unenrollment_data[week_label] = 0
+            current_start += 7
+
+        # Group enrollments by weekly ranges
+        for enrollment in enrollments_query:
+            day_of_month = enrollment.date_enrolled.day
+            for start, end in week_ranges:
+                if start <= day_of_month <= end:
+                    week_label = f"Day {start}-{end}"
+                    weekly_enrollment_data[week_label] += 1
+                    break
+
+        for unenrollment in unenrollments_query:
+            day_of_month = unenrollment.date_enrolled.day
+            for start, end in week_ranges:
+                if start <= day_of_month <= end:
+                    week_label = f"Day {start}-{end}"
+                    weekly_unenrollment_data[week_label] += 1
+                    break
+
+        # Prepare chart data
+        chart_labels = list(weekly_enrollment_data.keys())
+        chart_enrollment_data = list(weekly_enrollment_data.values())
+        chart_unenrollment_data = list(weekly_unenrollment_data.values())
+    else:
+        # Show monthly data when no month is selected
+        for enrollment in enrollments_query:
+            enrollment_data[enrollment.date_enrolled.month] += 1
+
+        for unenrollment in unenrollments_query:
+            unenrollment_data[unenrollment.date_enrolled.month] += 1
+
+        chart_labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+        chart_enrollment_data = list(enrollment_data.values())
+        chart_unenrollment_data = list(unenrollment_data.values())
+
+    context = {
+        'course': course,
+        'course_id': int(course_id),
+        'year': year,
+        'selected_month': month,
+        'enrollment_data': enrollment_data,
+        'unenrollment_data': unenrollment_data,
+        'all_courses': all_courses,
+        'chart_labels': json.dumps(chart_labels),  # Convert to JSON
+        'chart_enrollment_data': json.dumps(chart_enrollment_data),  # Convert to JSON
+        'chart_unenrollment_data': json.dumps(chart_unenrollment_data),  # Convert to JSON
+        'months': [
+            {'number': i, 'name': calendar.month_name[i]}
+            for i in range(1, 13)
+        ],
+        # Add data for table
+        'table_data': zip(chart_labels, chart_enrollment_data, chart_unenrollment_data)
+    }
+
+    return render(request, 'reports/enrollment_trends_report.html', context)
+
 @login_required
 def material_type_distribution_report(request):
     materials = CourseMaterial.objects.values('material_type').annotate(count=Count('id'))
     return render(request, 'reports/material_type_distribution_report.html', {'materials': materials})
 
+
 @login_required
 def tag_report(request):
     tags = Tag.objects.annotate(course_count=Count('courses'))
     return render(request, 'reports/tag_report.html', {'tags': tags})
+
 
 @login_required
 def user_progress_report(request):
@@ -285,7 +414,91 @@ def user_progress_report(request):
     progress = Completion.objects.filter(user=user).select_related('session', 'material')
     return render(request, 'reports/user_progress_report.html', {'progress': progress})
 
+
 @login_required
 def instructor_performance_report(request):
-    instructors = Course.objects.values('instructor').annotate(enrollment_count=Count('enrollment')).order_by('-enrollment_count')
+    instructors = Course.objects.values('instructor__username', 'course_name').annotate(
+        enrollment_count=Count('enrollments')
+    ).order_by('instructor__username', '-enrollment_count')
+
     return render(request, 'reports/instructor_performance_report.html', {'instructors': instructors})
+
+
+def round_to_nearest_half(hour):
+    return round(hour * 2) / 2
+
+def course_duration_report(request):
+    # Get the selected course from the GET parameters
+    selected_course_id = request.GET.get('course', None)
+
+    # Query to group durations by user and course
+    user_course_durations = (
+        MaterialViewingDuration.objects
+        .values('material__session__course', 'user')  # Group by course and user
+        .annotate(total_time=Sum(F('time_spent')))  # Sum the duration for each group
+    )
+
+    # Filter by selected course if provided
+    if selected_course_id:
+        user_course_durations = user_course_durations.filter(
+            material__session__course=selected_course_id
+        )
+
+    # Prepare data for rendering
+    course_durations = {}
+    for entry in user_course_durations:
+        course_id = entry['material__session__course']
+        user_id = entry['user']
+        total_time = entry['total_time']
+
+        # Convert time_spent (which is timedelta) to hours (float)
+        total_hours = total_time.total_seconds() / 3600 if total_time else 0
+
+        # Round to the nearest 0.5 hour
+        rounded_hours = round_to_nearest_half(total_hours)
+
+        if course_id not in course_durations:
+            course_durations[course_id] = {}
+
+        # Store rounded duration by user for the course in hours
+        course_durations[course_id][user_id] = rounded_hours
+
+    # Group users by the same time spent on the course
+    grouped_durations = {}
+    for course_id, user_data in course_durations.items():
+        for user_id, total_time in user_data.items():
+            if total_time not in grouped_durations:
+                grouped_durations[total_time] = 0
+            grouped_durations[total_time] += 1  # Count how many users spent this amount of time
+
+    # Prepare data for the chart
+    chart_labels = [f'{time} hours' for time in grouped_durations.keys()]
+    chart_data = list(grouped_durations.values())
+
+    # Optionally, retrieve course and user details for display
+    all_courses = Course.objects.in_bulk(course_durations.keys())
+    all_users = User.objects.in_bulk({user_id for user_data in course_durations.values() for user_id in user_data})
+
+    # Build human-readable data structure for the template
+    readable_durations = {}
+    for course_id, user_data in course_durations.items():
+        course_name = all_courses[course_id].course_name  # Get the course name
+        readable_durations[course_name] = {
+            all_users[user_id].username: total_time  # Get the username for each user
+            for user_id, total_time in user_data.items()
+        }
+
+    # Convert the Python dictionary to a JSON-serializable string
+    readable_durations_json = json.dumps(readable_durations)
+
+    # Get all courses for the filter dropdown
+    all_courses_names = Course.objects.values('id', 'course_name')
+
+    return render(request, 'reports/course_duration_report.html', {
+        'readable_durations_json': readable_durations_json,
+        'readable_durations': readable_durations,
+        'all_courses_names': all_courses_names,
+        'selected_course_id': selected_course_id,
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
+    })

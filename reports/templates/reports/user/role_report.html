@@ -1,28 +1,28 @@
 {% extends 'base.html' %}
 {% block content %}
-
-<div class="mt-4">
-    <!-- Nút Back -->
-    <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary mb-3">Back to Reports</a>
-</div>
 <ul class="nav nav-tabs">
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_overview_report' %}">User Overview </a>
+        <a class="nav-link" href="{% url 'reports:user_overview_report' %}">User Overview </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:student_id_report' %}">Student ID</a>
+        <a class="nav-link" href="{% url 'reports:student_id_report' %}">Student ID</a>
     </li>
     <li class="nav-item">
         <a class="nav-link active" href="{% url 'reports:role_report' %}">Role</a>
     </li>   
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_statistics_report' %}">User Statistics</a>
+        <a class="nav-link" href="{% url 'reports:user_statistics_report' %}">User Statistics</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:login_frequency_report' %}">Login Frequency</a>
+        <a class="nav-link" href="{% url 'reports:login_frequency_report' %}">Login Frequency</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_duration_login' %}">User Duration Login</a>
+        <a class="nav-link" href="{% url 'reports:user_duration_login' %}">User Duration Login</a>
+    </li>
+    
+    <!-- Nút Back to Reports với ms-auto để căn sang phải -->
+    <li class="nav-item ms-auto">
+        <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary">Back to Reports</a>
     </li>
 </ul>
 
@@ -30,14 +30,14 @@
     <h1 class="text-center mb-4">Number of users by role</h1>
 
     <!-- Canvas for Bar Chart -->
-    <canvas id="roleBarChart" style="width: 100%; height: 400px;"></canvas>  <!-- Đặt chiều rộng và chiều cao cho canvas -->
+    <canvas id="roleBarChart" style="width: 80%; height: 400px; margin: 0 auto;"></canvas> <!-- Thay đổi chiều rộng canvas và căn giữa -->
 
-    <div class="table-responsive mt-4">  <!-- Thêm div table-responsive để tự động cuộn trên thiết bị nhỏ -->
-        <table class="table table-striped table-sm">  <!-- Sử dụng table-sm để làm cho bảng nhỏ lại -->
+    <div class="table-responsive mt-4" style="width: 80%; margin: 0 auto;">  
+        <table class="table table-striped table-sm">  
             <thead>
                 <tr>
-                    <th class="small">Role</th>  <!-- Thêm lớp small để làm tiêu đề nhỏ hơn -->
-                    <th class="small">Number of Users</th>  <!-- Thêm lớp small để làm tiêu đề nhỏ hơn -->
+                    <th class="small">Role</th>  
+                    <th class="small">Number of Users</th>  
                 </tr>
             </thead>
             <tbody>
@@ -65,15 +65,16 @@
     // Tạo biểu đồ cột
     const ctx = document.getElementById('roleBarChart').getContext('2d');
     const roleBarChart = new Chart(ctx, {
-        type: 'bar',  // Thay đổi kiểu biểu đồ thành 'bar'
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
                 label: 'Number of Users',
                 data: data,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)', // Màu nền cho cột
-                borderColor: 'rgba(75, 192, 192, 1)', // Màu viền cho cột
-                borderWidth: 1 // Độ dày viền
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',// Màu viền cho cột
+                borderWidth: 1, // Độ dày viền
+                barThickness: 90 // Giảm chiều rộng của cột
             }]
         },
         options: {

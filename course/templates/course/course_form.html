@@ -7,69 +7,86 @@
 {% block content %}
 <head>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" type="text/css" href="{% static 'course/course.css' %}">
 </head>
-<body id="course-form">
-<div class="container">
-    <h2 class="text-2xl font-semibold text-teal-600 mb-4 main-color-text">{{ form.instance.pk|yesno:"Edit Course,Add New Course" }}</h2>
+<body>
+<div class="container"
+    style="margin: 0 auto; padding: 2rem; background-color: white; border-radius: 0.3125rem; box-shadow: 0 0.625rem 0.9375rem rgba(0, 0, 0, 0.1), 0 0.25rem 0.375rem rgba(0, 0, 0, 0.05);">
+    <h2 class="text-2xl font-semibold text-teal-600 mb-4 main-color-text" style="color: #072Ac8; text-transform: uppercase">{{ form.instance.pk|yesno:"Edit Course,Add New Course" }}</h2>
     <form method="post" class="space-y-4" enctype="multipart/form-data">
         {% csrf_token %}
-        <div class="form-row">
-            <div class="form-group">
-                <label for="course_name" class="block text-sm font-medium mb-1">{{ course_form.course_name.label }}</label>
-                {{ course_form.course_name|add_class:"w-full p-2 border border-gray-300 rounded" }}
+        <div id="course-form" class="form-row form-group-inline" style="display: flex; gap: 1rem; color: #072Ac8;">
+            <div class="form-group" style="flex: 1 1 50%; padding-right: 0.3125rem; padding-left: 0.3125rem; margin-bottom: 1rem;">
+                <label for="course_name" class="block text-sm font-medium mb-1" style="color: #2b59c3;">{{ course_form.course_name.label }}</label>
+                {{ course_form.course_name|add_class:"w-75 p-0.5rem border border-gray-300 rounded transition duration-300 ease-in-out" }}
             </div>
-            <div class="form-group">
-                <label for="course_code" class="block text-sm font-medium mb-1">{{ course_form.course_code.label }}</label>
-                {{ course_form.course_code|add_class:"w-full p-2 border border-gray-300 rounded" }}
-            </div>
-            <div class="form-group">
-                <label for="creator" class="block text-sm font-medium mb-1">{{ course_form.creator.label }}</label>
-                {{ course_form.creator|add_class:"w-full p-2 border border-gray-300 rounded" }}
-            </div>
-            <div class="form-group">
-                <label for="instructor" class="block text-sm font-medium mb-1">{{ course_form.instructor.label }}</label>
-                {{ course_form.instructor|add_class:"w-full p-2 border border-gray-300 rounded" }}
-            </div>
-            <div class="form-group">
-                <label for="{{ course_form.image.id_for_label }}" class="block text-sm font-medium mb-1">{{ course_form.image.label }}</label>
-                {{ course_form.image|add_class:"w-full p-2 border border-gray-300 rounded" }}
+            <div class="form-group" style="flex: 1 1 calc(25% - 0.625rem); padding-right: 0.3125rem; padding-left: 0.3125rem; margin-bottom: 1rem;">
+                <label for="course_code" class="block text-sm font-medium mb-1" style="color: #2b59c3;">{{ course_form.course_code.label }}</label>
+                {{ course_form.course_code|add_class:"w-full p-0.5rem border border-gray-300 rounded transition duration-300 ease-in-out" }}
             </div>
         </div>
-        <div class="description-container">
-            <label for="description" class="block text-lg font-bold mb-2">{{ course_form.description.label }}</label>
-            {{ course_form.description|add_class:"w-full p-2 border border-gray-300 rounded description-input" }}
+        <div class="form-container" style="display: flex; gap: 0.625rem; margin-bottom: 1rem; align-items: flex-start;">
+            <div class="form-group" style="flex: 1; padding-right: 0.3125rem; padding-left: 0.3125rem;">
+                <label for="{{ course_form.image.id_for_label }}" class="block text-sm font-medium mb-1" style="color: #2b59c3;">{{ course_form.image.label }}</label>
+                {{ course_form.image|add_class:"w-75 p-0.5rem border border-gray-300 rounded transition duration-300 ease-in-out" }}
+            </div>
+            <div class="form-group" style="flex: 1; padding-right: 0.3125rem; padding-left: 0.3125rem;">
+                <label for="creator" class="block text-sm font-medium mb-1" style="color: #2b59c3;">{{ course_form.creator.label }}</label>
+                {{ course_form.creator|add_class:"w-full p-0.5rem border border-gray-300 rounded transition duration-300 ease-in-out" }}
+            </div>
+            <div class="form-group" style="flex: 1; padding-right: 0.3125rem; padding-left: 0.3125rem;">
+                <label for="instructor" class="block text-sm font-medium mb-1" style="color: #2b59c3;">{{ course_form.instructor.label }}</label>
+                {{ course_form.instructor|add_class:"w-full p-0.5rem border border-gray-300 rounded transition duration-300 ease-in-out" }}
+            </div>
+        </div>
+        <div class="description-container" style="width: 100%; font-weight: bold;">
+            <h3 class="text-xl font-semibold mb-4" style="color: #072Ac8;">Description</h3>
+            {{ course_form.description|add_class:"form-control" }}
         </div>
 
         <!-- Session and Prerequisite Fields -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-                <h3 class="text-xl font-semibold mb-4 main-color-text">Session Information</h3>
-                <div class="form-group-inline">
-                    <div class="form-group">
-                        <label for="session_name" class="block text-lg font-medium mb-2">{{ session_form.session_name.label }}</label>
-                        {{ session_form.session_name|add_class:"w-full p-2 border border-gray-300 rounded" }}
+                <h3 class="text-xl font-semibold mb-4" style="color: #072Ac8; margin-top:1rem">Session Information</h3>
+                <div class="form-group-inline" style="display: flex; justify-content: space-between;">
+                    <div class="form-group" style="flex: 1; padding-right: 0.3125rem;">
+                        <label for="session_name" class="block text-lg font-medium mb-2" style="color: #2b59c3;">{{ session_form.session_name.label }}</label>
+                        {{ session_form.session_name|add_class:"w-full p-0.5rem border border-gray-300 rounded" }}
                     </div>
-                    <div class="form-group">
-                        <label for="session_quantity" class="block text-lg font-medium mb-2">{{ session_form.session_quantity.label }}</label>
-                        {{ session_form.session_quantity|add_class:"w-full p-2 border border-gray-300 rounded" }}
+                    <div class="form-group" style="flex: 1; padding-left: 0.3125rem;">
+                        <label for="session_quantity" class="block text-lg font-medium mb-2" style="color:#2b59c3;">{{ session_form.session_quantity.label }}</label>
+                        {{ session_form.session_quantity|add_class:"w-full p-0.5rem border border-gray-300 rounded" }}
                     </div>
                 </div>
             </div>
             <div>
-                <h3 class="text-xl font-semibold mb-4 main-color-text">Prerequisite Courses</h3>
-                <div class="mb-4">
-                    <select name="prerequisite_courses[]" class="w-full p-2 border border-gray-300 rounded select2" multiple>
-                        {% for course in all_courses %}
-                            <option value="{{ course.id }}">{{ course.course_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+                <h3 class="text-xl font-semibold mb-4" style="color: #072Ac8; margin-top:1rem">Course Details</h3>
+        <div class="form-group-inline" style="display: flex; gap: 1rem;">
+            <!-- Prerequisite Course Selection -->
+            <div style="flex: 1;">
+                <label class="block text-lg font-medium mb-2" style="color:#2b59c3;">Prerequisite Course</label>
+                <select name="prerequisite_courses[]" class="form-select select2" multiple>
+                    {% for course in all_courses %}
+                        <option value="{{ course.id }}">{{ course.course_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Price Field -->
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <label for="price" class="block text-lg font-medium mb-2" style="color:#2b59c3;">{{ course_form.price.label }}</label>
+                {{ course_form.price|add_class:"w-full p-0.5rem border border-gray-300 rounded" }}
+            </div>
+
+            <!-- Discount Field -->
+            <div style="flex: 1; display: flex; flex-direction: column;">
+                <label for="discount" class="block text-lg font-medium mb-2" style="color:#2b59c3;">{{ course_form.discount.label }}</label>
+                {{ course_form.discount|add_class:"w-full p-0.5rem border border-gray-300 rounded" }}
             </div>
         </div>
-        <div class="button-group justify-end mt-6">
-            <button type="submit" class="btn main-color px-4 py-2 rounded">Save</button>
-            <a href="{% url 'course:course_list' %}" class="btn btn-secondary px-4 py-2 rounded">Back to Course List</a>
+        <div class="button-group" style="display: flex; justify-content: flex-end; margin-top: 1.5rem; margin-left: 0.125rem; gap: 1rem;">
+            <button type="submit" class="btn btn-primary px-1rem py-0.5rem rounded" style="background-color:#6eb2df">Save</button>
+
+            <a href="{% url 'course:course_list' %}" class="btn btn-secondary px-1rem py-0.5rem rounded ml-2">Back to Course List</a>
         </div>
     </form>
 </div>

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block content %}
+<ul class="nav nav-tabs">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'reports:user_overview_report' %}">User Overview </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'reports:student_id_report' %}">Student ID</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'reports:role_report' %}">Role</a>
+    </li>   
+    <li class="nav-item">
+        <a class="nav-link active" href="{% url 'reports:user_statistics_report' %}">User Statistics</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'reports:login_frequency_report' %}">Login Frequency</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'reports:user_duration_login' %}">User Duration Login</a>
+    </li>
+    
+    <!-- Nút Back to Reports với ms-auto để căn sang phải -->
+    <li class="nav-item ms-auto">
+        <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary">Back to Reports</a>
+    </li>
+</ul>
+
+
+<div class="container mt-4">
+    
+    <h1 class="text-center mb-4">User Statistics</h1>
+
+    <!-- Dùng Flexbox để tạo bố cục với biểu đồ bên trái và bảng bên phải -->
+    <div class="d-flex justify-content-between">
+        <!-- Biểu đồ số lần đăng nhập -->
+        <div style="flex: 1; max-width: 50%; margin-right: 10px;"> <!-- Đặt độ rộng tối đa cho khung chứa -->
+            <h3 class="text-center">Current Month: {{ current_month }}</h3>
+            <canvas id="loginCountsChart" width="400" height="200"></canvas> <!-- Tăng chiều cao của biểu đồ -->
+        </div>
+
+        <!-- Bảng người dùng đã đăng nhập vào ngày được chọn -->
+        <div id="userList" style="flex: 1; max-width: 50%; margin-left: 10px;"> <!-- Đặt độ rộng tối đa cho bảng -->
+            <h4>Users who logged in on {{ selected_date|default:"selected date" }}:</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Date Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in selected_users %}
+                    <tr>
+                        <td>{{ user.user__username }}</td>
+                        <td>{{ user.user__email }}</td>
+                        <td>{{ user.user__date_joined }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center">No users logged in on this date.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Biểu đồ -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const loginDates = {{ login_dates|safe }};
+            const userCounts = {{ user_counts|safe }};
+            
+            const ctx = document.getElementById('loginCountsChart').getContext('2d');
+            const loginCountsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: loginDates,
+                    datasets: [{
+                        label: 'User Login Counts',
+                        data: userCounts,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderWidth: 1,
+                        barThickness: 70 // Điều chỉnh chiều rộng cột tại đây
+                    }]
+                },
+                options: {
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            const selectedDate = loginDates[index];
+                            // Điều hướng đến URL với tham số login_date
+                            window.location.href = `/reports/user_statistics_report/?login_date=${selectedDate}`;
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Users'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Login Dates'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                        }
+                    },
+                    // Thêm thuộc tính barPercentage và categoryPercentage
+                    barPercentage: 0.6, // Tỉ lệ chiều rộng cột so với khoảng cách giữa các cột
+                    categoryPercentage: 0.8 // Tỉ lệ chiều rộng của toàn bộ biểu đồ
+                }
+            });
+        });
+    </script>
+</div>
+{% endblock %}

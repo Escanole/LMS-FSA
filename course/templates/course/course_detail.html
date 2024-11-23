@@ -5,123 +5,126 @@
 {% block title %}{{ course.course_name }}{% endblock %}
 
 {% block content %}
-<head>
-    <link rel="stylesheet" type="text/css" href="{% static 'course/course.css' %}">
-</head>
-<body id="course-detail">
 <!-- <div class="background-wrapper" style="background-image: url('{% if course.image %}{{ course.image.url }}{% else %}{% static 'course/images/blue(8).png' %}{% endif %}');"> -->
-    <div>
+<body>
+<div>
     {% if user_type == 'instructor' or user.is_superuser %}
-    <div class="container mt-0">
-        <a href="{% url 'course:course_list' %}" style="margin-top: -60px; font-size: 18px; color: #0087f3;">
-            <i class="fas fa-arrow-left" style="font-size: 20px; color: #0087f3;"></i> <!-- Arrow icon -->
+    <div class="container mt-0" >
+        <a href="{% url 'course:course_list' %}" style="margin-top: -3.75rem; font-size: 1.125rem; color: #0087f3;">
+            <i class="fas fa-arrow-left" style="font-size: 1.25rem; color: #0087f3; margin-top: 1.25rem;"></i> <!-- Arrow icon -->
         </a>
     </div>
     {% endif %}
-    <div class="container mt-4">
-        <div class="course-title-container">
-            <h1 class="text-3xl font-bold main-color-text uppercase-title">{{ course.course_name }}</h1>
+    <div class="container mt-4" style="max-width: 87.5rem; margin-left: auto; margin-right: auto; padding-left: 0.9375rem; padding-right: 0.9375rem; padding-top: 1.125rem; gap: 0.625rem;">
+        <div class="course-title-container" style="margin-left: 0; margin-right: 0; font-size: 1.875rem; margin-top: 0.0625rem; margin-bottom: 0.625;">
+            <h1 class="text-3xl font-bold main-color-text" style=" text-transform: uppercase; font-size: 3.7rem; color: #072Ac8; ">{{ course.course_name }}</h1>
         </div>
 
-        <div class="container text-center"> <!--khung hình chữ nhật-->
-            <div class="row">
-                <div class="col"> <!--cell1-->
-                    <div class="star-rating">
-                        <div class="back-stars">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
+        <div class="container text-center" style="padding: 0; margin-top: 1.25rem; margin-bottom: 2.5rem; background-color: #fefefe; border-radius: 0.3125rem; box-shadow: 0 0.5rem 1.25rem rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: stretch;">
+            <div class="row" style="display: flex; width: 100%; margin: 0;">
+
+                <div class="col" style="background-color: #ffffff; border-right: 0.03125rem dashed #6eb2df; flex: 1; padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
+                    <div style="width: 100%; display: flex; align-items: center; justify-content: flex-start;">
+                        <div class="star-rating" style="position: relative; display: inline-block; font-size: 1.5rem; width: 6.25rem; height: 1.25rem;">
+                            <!-- Hàng sao màu xám nằm bên dưới -->
+                            <div class="back-stars" style="color: #ccc; position: absolute; top: 0; left: 0; width: 100%; display: flex; gap: 0.125rem;">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+
+                            <!-- Hàng sao màu vàng nằm bên trên -->
+                            <div class="front-stars" style="color: gold; position: absolute; top: 0; left: 0; width: {{ course_average_rating_star }}%; display: flex; gap: 0.125rem; overflow: hidden;">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
                         </div>
-                        <!-- Set the width of front-stars based on course_average_rating -->
-                        <div class="front-stars" style="width: {{ course_average_rating_star }}%;">
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                            <i class="fas fa-star"></i>
-                        </div>
+
+                        <span class="rating-text" style="margin-left: 3.7rem; font-weight: bold; font-size: 1.5rem;">{{ course_average_rating|floatformat:1 }}</span>
                     </div>
-                    <span class="rating-text">{{ course_average_rating|floatformat:1 }}</span>
-                    <p class="course-info-text">Most learners appreciated this course</p>
+                    <p class="course-info-text" style="color: #2b59c3; font-size: 1rem; margin-bottom: 0; text-align: left;">Most learners appreciated this course</p>
                 </div>
-                <div class="col">
+
+                <div class="col" style="background-color: #ffffff; border-right: 0.03125rem dashed #6eb2df; flex: 1; padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
                     {% if is_enrolled and sessions %}
-                        <p class="session-count uppercase-title">
-                            <a href="{% url 'course:course_content' course.pk sessions.0.id %}" class="session-link">
+                        <p class="session-count" style="color: #2b59c3; font-size: 1.625rem; font-weight: bold; margin-bottom: 0.3125rem;">
+                            <a href="{% url 'course:course_content' course.pk sessions.0.id %}" class="session-link" style="text-decoration: none; color: #2b59c3; cursor: pointer; transition: color 0.3s ease;">
                                 <span>{{ session_count }} Sessions</span>
-                                <i class="fas fa-book" style="color: black;"></i>
+                                <i class="fas fa-book" style="color: black; margin-left: 0.625rem;"></i>
                             </a>
                         </p>
-                        <p class="course-info-text">Let's explore the course!</p>
+                        <p class="course-info-text" style="color: #2b59c3; font-size: 1rem; margin-bottom: 0; text-align: left;">Let's explore the course!</p>
                     {% else %}
-                        <p class="session-count uppercase-title">
+                        <p class="session-count" style="color: #2b59c3; font-size: 1.625rem; font-weight: bold; margin-bottom: 0.3125rem;">
                             <span>{{ session_count }} Sessions</span>
-                            <i class="fas fa-book" style="color: black;"></i>
+                            <i class="fas fa-book" style="color: black; margin-left: 0.625rem;"></i>
                         </p>
                         {% if not is_enrolled %}
-                            <p class="course-info-text">Please review the prerequisite course before enrolling</p>
                         {% else %}
-                            <p class="course-info-text">No sessions available</p>
+                            <p class="course-info-text" style="color: #2b59c3; font-size: 1rem; margin-bottom: 0; text-align: left;">No sessions available</p>
                         {% endif %}
                     {% endif %}
                 </div>
 
-                <div class="col">
-                    <h4 class="course-info-title uppercase-title" style="color: #2b59c3 bold">Relevant</h4>
-                    <div style="display: flex; align-items: center;"> <!-- Added flex container -->
-                        <i class="fas fa-tag" style="margin-right: 5px;"></i> <!-- Added margin for spacing -->
-                        <ul class="tag-list" style="margin: 0; padding: 0;"> <!-- Reset margin and padding -->
+                <div class="col" style="background-color: #ffffff; border-right: 0.03125rem dashed #6eb2df; flex: 1; padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
+                    <h4 class="course-info-title" style="color: #2b59c3; font-size: 1.625rem; font-weight: bold; margin-bottom: 0.5rem;">Relevant</h4>
+                    <div style="display: flex; align-items: center;">
+                        <i class="fas fa-tag" style="margin-right: 0.625rem;"></i>
+                        <div class="tag-list" style="display: flex; flex-wrap: wrap; align-items: center;">
                             {% for tag in random_tags %}
-                                <li class="course-info-text">{{ tag.name }}</li>
+                                <span class="course-info-text" style="color: #2b59c3; font-size: 1rem;">
+                                    {{ tag.name }}{% if not forloop.last %}, {% endif %}
+                                </span>
                             {% empty %}
-                                <li class="course-info-text">No tags available</li>
+                                <span class="course-info-text" style="color: #2b59c3; font-size: 1rem;">No tags available</span>
                             {% endfor %}
-                        </ul>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col">
-                    {%if can_enroll%}
+                <div class="col" style="background-color: #ffffff; flex: 1; padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
+                    {% if can_enroll %}
                         {% if is_enrolled and sessions %}
-                            <a href="{% url 'course:course_unenroll' course.pk %}" class="unenroll-link" style="font-size: 30px;" >Unenroll</a>
+                            <a href="{% url 'course:course_unenroll' course.pk %}" class="unenroll-link" style="color: #dc3545; font-size: 1.875rem; cursor: pointer; position: relative; text-align: center;" title="Careful! You will lose all your progress!">Unenroll</a>
                         {% elif is_enrolled %}
-                            <p>No sessions</p>
+                            <p style="text-align: left;">No sessions</p>
                         {% else %}
-                            <div class="d-inline-flex align-items-center">
-                                <a href="{% url 'course:course_enroll' course.pk %}" class="enroll-link" style="font-size: 30px; color: #2b59c3;" title="Please review the prerequisite course!">Enroll</a>
-                            </div>
+                            <a href="{% url 'course:course_enroll' course.pk %}" class="enroll-link" style="font-size: 1.875rem; color: #2b59c3; cursor: pointer; position: relative; text-align: center;" title="Please review the prerequisite course!">Enroll</a>
                         {% endif %}
-                    {% else%}
-                        <p style="color: red; font-size: 18px;">You are not eligible to enroll in this course</p>
+                    {% else %}
+                        <p style="color: red; font-size: 1.125rem; text-align: left;">You are not eligible to enroll in this course</p>
                     {% endif %}
                 </div>
             </div>
         </div>
 
-        <div class="tab-container mt-4">
-        {% if user_type == 'instructor' or user.is_superuser %}
-            <div class="tab">
-                <button class="tablinks" onclick="openTab(event, 'Tab1')">Detail</button>
-                <button class="tablinks" onclick="openTab(event, 'Tab2')">Student Enroll</button>
-            </div>
-        {% elif user_type == 'student' %}
-            <div class="tab">
-                <button class="tablinks" onclick="openTab(event, 'Tab1')">Detail</button>
-                <button class="tablinks" onclick="openTab(event, 'Tab2')">Prerequisite</button>
-                <button class="tablinks" onclick="openTab(event, 'Tab3')">Instructor</button>
-            </div>
-        {% endif %}
+        <div class="tab-container mt-4" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 0.0625rem solid #ccc;">
+            {% if user_type == 'instructor' or user.is_superuser %}
+                <div class="tab" style="display: flex; overflow: hidden; background-color: #ffffff;">
+                    <button class="tablinks" onclick="openTab(event, 'Tab1')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Detail</button>
+                    <button class="tablinks" onclick="openTab(event, 'Tab2')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Student Enroll</button>
+                </div>
+            {% elif user_type == 'student' %}
+                <div class="tab" style="display: flex; overflow: hidden; background-color: #ffffff;">
+                    <button class="tablinks" onclick="openTab(event, 'Tab1')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Detail</button>
+                    <button class="tablinks" onclick="openTab(event, 'Tab2')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Prerequisite</button>
+                    <button class="tablinks" onclick="openTab(event, 'Tab3')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Instructor</button>
+                </div>
+            {% endif %}
         </div>
 
-        <div id="Tab1" class="tabcontent">
+        <div id="Tab1" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;">
             {% if user_type == 'instructor' or user.is_superuser %}
                 <!-- Information Table -->
-                <table class="table table-bordered mb-4">
+                <table class="table table-bordered mb-4" style="border: 0.09375rem solid #ccc;">
                     <thead class="thead-light">
                     <tr>
-                        <th colspan="2">Information</th>
+                        <th colspan="2" style="background-color: #6eb2df; color: #ffffff; font-weight: bold; text-align: center;">Information</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -191,8 +194,8 @@
                 </div>
             {% endif %}
             <!-- Latest Student Feedback Carousel -->
-                <div id="feedbackCarousel" class="carousel slide" data-ride="carousel">
-                    <div class="carousel-inner">
+            <div id="feedbackCarousel" class="carousel slide" data-ride="carousel" data-interval="3000">
+                <div class="carousel-inner">
                         {% if latest_feedbacks %}
                             {% for feedback in latest_feedbacks %}
                                 {% if forloop.counter0|divisibleby:3 %}
@@ -219,49 +222,55 @@
                             <div class="carousel-item-active">
                                 <div class="row">
                                     <div class="col-12">
-                                        <p style="margin-left: 30px;">No feedback has been provided for this course yet.</p>
+                                        <p style="margin-left: 1.875rem;">No feedback has been provided for this course yet.</p>
                                     </div>
                                 </div>
                             </div>
                         {% endif %}
                     </div>
-                    <a class="carousel-control-prev" href="#feedbackCarousel" role="button" data-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <a class="carousel-control-prev" href="#feedbackCarousel" role="button" data-slide="prev"
+                        style="width: 5%; position: absolute; top: 50%; transform: translateY(-50%); left: -2%;">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"
+                                style="background-size: 100% 100%; width: 3rem; height: 3rem; background-image: url('data:image/svg+xml;charset=utf8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%23000\' viewBox=\'0 0 8 8\'%3E%3Cpath d=\'M5.25 0l-4 4 4 4 1.5-1.5-2.5-2.5 2.5-2.5-1.5-1.5z\'/%3E%3C/svg%3E');">
+                            </span>
                         <span class="sr-only">Previous</span>
                     </a>
-                    <a class="carousel-control-next" href="#feedbackCarousel" role="button" data-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="sr-only">Next</span>
+                    <a class="carousel-control-next" href="#feedbackCarousel" role="button" data-slide="next"
+                        style="width: 5%; position: absolute; top: 50%; transform: translateY(-50%); right: -2%;">
+                            <span class="carousel-control-next-icon" aria-hidden="true"
+                                style="background-size: 100% 100%; width: 3rem; height: 3rem; background-image: url('data:image/svg+xml;charset=utf8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' fill=\'%23000\' viewBox=\'0 0 8 8\'%3E%3Cpath d=\'M2.75 0l-4 4 4 4 1.5-1.5-2.5-2.5 2.5-2.5-1.5-1.5z\'/%3E%3C/svg%3E'); transform: rotate(180deg);">
+                            </span>
+                            <span class="sr-only">Next</span>
                     </a>
                 </div>
-            <a href="{% url 'feedback:course_all_feedback' course.pk %}" class="text-primary" style='margin-left: 30px;'>
+            <a href="{% url 'feedback:course_all_feedback' course.pk %}" class="text-primary" style='margin-left: 1.875rem;'>
                 See All Feedback
             </a>
-            <p style="display: inline; margin: 0 5px;"> or </p>
-            <a href="{% url 'feedback:give_course_feedback' course.pk %}" class="text-primary" style='margin-left: 3px;'>
+            <p style="display: inline; margin: 0 0.3125rem;"> or </p>
+            <a href="{% url 'feedback:give_course_feedback' course.pk %}" class="text-primary" style='margin-left: 0.1875rem;'>
                 Give A Feedback
             </a>
         </div>
 
-        <div id="Tab2" class="tabcontent">
+        <div id="Tab2" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;">
             {% if user_type == 'instructor' or user.is_superuser %}
-                <div class="content-wrapper" style="max-width: 1200px; margin: 0 auto; padding: 0 20px;">
+                <div class="content-wrapper" style="max-width: 75rem; margin: 0 auto; padding: 0 1.25rem;">
                     {% if user_progress %}
-                        <table class="table" style="width: 100%; table-layout: fixed;border-collapse: collapse; border: 1px solid #ccc;">
+                        <table class="table" style="width: 100%; table-layout: fixed; border-collapse: collapse; border: 0.0625rem solid #ccc;">
                             <thead>
                                 <tr>
-                                    <th class="table-header username-column" style=" background-color: #eaecee; color: #2b59c3; width: 30%; text-align: center; padding: 10px; font-size: 18px;  border: 1px solid #ccc;">Username</th>
-                                    <th class="table-header progress-column" style=" background-color: #eaecee; color: #2b59c3; width: 40%; text-align: center; padding: 10px; font-size: 18px;  border: 1px solid #ccc;">Progress (%)</th>
+                                    <th class="table-header username-column" style="background-color: #eaecee; color: #2b59c3; width: 30%; text-align: center; padding: 0.625rem; font-size: 1.125rem; border: 0.0625rem solid #ccc;">Username</th>
+                                    <th class="table-header progress-column" style="background-color: #eaecee; color: #2b59c3; width: 40%; text-align: center; padding: 0.625rem; font-size: 1.125rem; border: 0.0625rem solid #ccc;">Progress (%)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in user_progress %}
                                     <tr>
-                                        <td class="username-column" style="width: 30%; text-align: left; padding: 10px; border: 1px solid #ccc;">{{ item.user.username }}</td>
-                                        <td class="progress-column" style="width: 40%; text-align: center; padding: 10px; border: 1px solid #ccc;">
+                                        <td class="username-column" style="width: 30%; text-align: left; padding: 0.625rem; border: 0.0625rem solid #ccc;">{{ item.user.username }}</td>
+                                        <td class="progress-column" style="width: 40%; text-align: center; padding: 0.625rem; border: 0.0625rem solid #ccc;">
                                             {{ item.progress|floatformat:2 }}%
-                                            <div class="progress" style="width: 100%; height: 10px; background-color: #ddd; border-radius: 5px; overflow: hidden; margin-top: 5px;">
-                                                <div class="progress-bar" style="height: 100%; width: {{ item.progress }}%; background-color: #389bb0; border-radius: 5px;"></div>
+                                            <div class="progress" style="width: 100%; height: 0.625rem; background-color: #ddd; border-radius: 0.3125rem; overflow: hidden; margin-top: 0.3125rem;">
+                                                <div class="progress-bar" style="height: 100%; width: {{ item.progress }}%; background-color: #389bb0; border-radius: 0.3125rem;"></div>
                                             </div>
                                         </td>
                                     </tr>
@@ -278,7 +287,7 @@
                     <div class="col-md-12">
                         <h2 class="main-color-text">Prerequisite Map</h2>
                         {% if course.prerequisites.all %}
-                            <div id="prerequisiteChart" style="width: 100%; height: 400px;"></div>
+                            <div id="prerequisiteChart" style="width: 100%; height: 25rem;"></div>
                         {% else %}
                             <p class="text-gray-600">No prerequisites available.</p>
                         {% endif %}
@@ -287,22 +296,24 @@
             {% endif %}
         </div>
 
-        <div id="Tab3" class="tabcontent">
+        <div id="Tab3" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;">
             <h2 class="main-color-text">Instructor</h2>
-            <table class="instructor-table">
-                <thead>
-                    <tr>
-                        <th>Full Name</th>
-                        <th>Email</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ instructor.username }}</td>
-                        <td>{{ instructor.email }}</td>
-                    </tr>
-                </tbody>
-            </table>
+            <div style="overflow-x: auto;">
+                <table class="instructor-table" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th style="background-color: #2b59c3; color: white; padding: 0.5rem;">Full Name</th>
+                            <th style="background-color: #2b59c3; color: white; padding: 0.5rem;">Email</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="border: 0.0625rem solid #ddd; padding: 0.5rem; text-align: left;">{{ instructor.username }}</td>
+                            <td style="border: 0.0625rem solid #ddd; padding: 0.5rem; text-align: left;">{{ instructor.email }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -325,28 +336,36 @@ function openTab(evt, tabName) {
     }
     tablinks = document.getElementsByClassName("tablinks");
     for (i = 0; i < tablinks.length; i++) {
-        tablinks[i].className = tablinks[i].className.replace(" active", "");
+        tablinks[i].style.backgroundColor = "#ffffff";
+        tablinks[i].style.color = "black";
     }
     document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-}
+    evt.currentTarget.style.backgroundColor = "#6eb2df";  // Màu nền khi active
+    evt.currentTarget.style.color = "white"; // Màu chữ khi active
 
+    // Lưu trạng thái tab vào localStorage
+    localStorage.setItem('activeTab', tabName);
+}
 
 $(document).ready(function(){
     var userType = "{{ user_type }}";
 
-    // Automatically open the last active tab if saved in localStorage
+    // Mở tab cuối cùng được chọn nếu đã lưu trong localStorage
     var activeTab = localStorage.getItem('activeTab') || 'Tab1';
     var activeTabElement = document.getElementById(activeTab);
 
     if (activeTabElement) {
         activeTabElement.style.display = 'block';
-        document.querySelector(`.tablinks[onclick*='${activeTab}']`).classList.add('active');
+        var activeTabButton = document.querySelector(`.tablinks[onclick*='${activeTab}']`);
+        activeTabButton.style.backgroundColor = "#6eb2df"; // Màu nền khi active
+        activeTabButton.style.color = "white"; // Màu chữ khi active
     } else {
         console.error(`Element with ID ${activeTab} not found. Defaulting to Tab1.`);
-        document.getElementById('Tab1').style.display = 'block';  // Fallback to default tab
-        document.querySelector('.tablinks[onclick*="Tab1"]').classList.add('active');
+        document.getElementById('Tab1').style.display = 'block';
+        document.querySelector('.tablinks[onclick*="Tab1"]').style.backgroundColor = "#6eb2df";
+        document.querySelector('.tablinks[onclick*="Tab1"]').style.color = "white";
     }
+
 
     if (userType === "student") {
         $('#feedbackCarousel').carousel({

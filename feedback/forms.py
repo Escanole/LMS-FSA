@@ -6,6 +6,13 @@ class InstructorFeedbackForm(forms.ModelForm):
     class Meta:
         model = InstructorFeedback
         fields = ['course_knowledge', 'communication_skills', 'approachability', 'engagement', 'professionalism', 'comments']
+        widgets = {
+            'course_knowledge': forms.HiddenInput(),
+            'communication_skills': forms.HiddenInput(),
+            'approachability': forms.HiddenInput(),
+            'engagement': forms.HiddenInput(),
+            'professionalism': forms.HiddenInput(),
+        }
 
 class CourseFeedbackForm(forms.ModelForm):
     class Meta:

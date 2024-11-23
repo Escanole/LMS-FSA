@@ -1,58 +1,58 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="mt-4">
-    <!-- Nút Back -->
-    <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary mb-3">Back to Reports</a>
-</div>
-<style>
-    .nav-tabs .nav-link {
-        background-color: rgba(135, 206, 235, 0.6);  /* Màu xanh biển nhạt cho tất cả các tab */
-        color: #000;  /* Màu chữ đen */
-    }
-    
-    .nav-tabs .nav-link.active {
-        background-color: #fff;  /* Màu trắng cho tab đang hoạt động */
-        color: #000;  /* Màu chữ đen cho tab đang hoạt động */
-    }
-
-    .nav-tabs .nav-link:hover {
-        background-color: rgba(135, 206, 235, 0.8);  /* Màu xanh biển nhạt hơn khi hover */
-        color: #fff;  /* Màu chữ đen khi hover */
-    }
-</style>
 <ul class="nav nav-tabs">
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_overview_report' %}">User Overview </a>
+        <a class="nav-link" href="{% url 'reports:user_overview_report' %}">User Overview</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:student_id_report' %}">Student ID</a>
+        <a class="nav-link" href="{% url 'reports:student_id_report' %}">Student ID</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:role_report' %}">Role</a>
+        <a class="nav-link" href="{% url 'reports:role_report' %}">Role</a>
     </li>   
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_statistics_report' %}">User Statistics</a>
+        <a class="nav-link" href="{% url 'reports:user_statistics_report' %}">User Statistics</a>
     </li>
     <li class="nav-item">
         <a class="nav-link active" href="{% url 'reports:login_frequency_report' %}">Login Frequency</a>
     </li>
     <li class="nav-item">
-        <a class="nav-link active" href="{% url 'reports:user_duration_login' %}">User Duration Login</a>
+        <a class="nav-link" href="{% url 'reports:user_duration_login' %}">User Duration Login</a>
+    </li>
+    
+    <!-- Nút Back to Reports với ms-auto để căn sang phải -->
+    <li class="nav-item ms-auto">
+        <a href="{% url 'reports:report_dashboard' %}" class="btn btn-secondary">Back to Reports</a>
     </li>
 </ul>
-<div class="container mt-4">
-    <h2 class="text-center">Login frequency</h2>  <!-- Sử dụng title động ở đây -->
 
+<div class="container mt-4">
+    <h2 class="text-center">Login Frequency</h2>  <!-- Sử dụng title động ở đây -->
+
+    <style>
+        .date-input {
+            width: 150px; /* Điều chỉnh chiều rộng theo ý muốn */
+        }
+        .form-inline .form-group {
+            display: inline-block; /* Đảm bảo các form-group nằm trên cùng một hàng */
+            margin-right: 1rem; /* Khoảng cách giữa các ô */
+        }
+    </style>
+    
     <!-- Form chọn ngày -->
     <form method="get" class="form-inline mb-4">
-        <label for="from_date">From date:</label>
-        <input type="date" id="from_date" name="from_date" class="form-control mx-2" value="{{ from_date }}">
-        
-        <label for="to_date">By date:</label>
-        <input type="date" id="to_date" name="to_date" class="form-control mx-2" value="{{ to_date }}">
-        
+        <div class="form-group">
+            <label for="from_date" class="mr-2"><i class="fas fa-calendar-alt"></i> From:</label>
+            <input type="date" id="from_date" name="from_date" class="form-control date-input" value="{{ from_date }}">
+        </div>
+        <div class="form-group">
+            <label for="to_date" class="mr-2"><i class="fas fa-calendar-alt"></i> To:</label>
+            <input type="date" id="to_date" name="to_date" class="form-control date-input" value="{{ to_date }}">
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
     </form>
-
+    
+    
     <!-- Biểu đồ tần suất đăng nhập -->
     <canvas id="loginFrequencyChart" width="400" height="200"></canvas>
     
@@ -66,8 +66,8 @@
                 datasets: [{
                     label: 'Number of logins',
                     data: {{ counts|safe }},
-                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
                     borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
                     borderWidth: 1
                 }]
             },
@@ -83,7 +83,7 @@
                     x: {
                         title: {
                             display: true,
-                            text: 'Ngày'
+                            text: 'Day'
                         }
                     }
                 },

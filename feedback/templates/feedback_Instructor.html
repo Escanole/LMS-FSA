@@ -1,35 +1,122 @@
 {% extends 'base.html' %}
+{% load widget_tweaks %}
 
 {% block title %}Give Instructor Feedback{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Give Feedback to {{ instructor.username }}</h2>
-    <form method="post">
-        {% csrf_token %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="text-3xl font-bold" style="color: #072ac8; margin-top:2rem; text-transform: uppercase">Feedback for Instructor: {{ instructor.username }}</h1>
 
-        <!-- Criteria Ratings -->
-        <label>Course Knowledge</label>
-        {{ form.course_knowledge }}
+            <form method="post" class="needs-validation p-4 bg-white shadow-md rounded-md mt-4" novalidate>
+                {% csrf_token %}
 
-        <label>Communication Skills</label>
-        {{ form.communication_skills }}
+                <!-- Criteria Ratings -->
+                <div class="mb-4 rating-container" style="display: flex; align-items: center; gap: 0.625rem;">
+                    <label for="courseKnowledge" class="form-label fw-bold" style="color:#2b59c3">Course Knowledge</label>
+                    <div class="star-rating" style="display: flex; font-size: 1.5rem;" id="courseKnowledge">
+                        {% for i in "12345" %}
+                            <i class="fas fa-star {% if form.course_knowledge.value|default_if_none:0 >= forloop.counter %}checked{% else %}unchecked{% endif %}" data-value="{{ forloop.counter }}"></i>
+                        {% endfor %}
+                    </div>
+                    {{ form.course_knowledge|add_class:"d-none" }}
+                </div>
 
-        <label>Approachability</label>
-        {{ form.approachability }}
+                <div class="mb-4 rating-container" style="display: flex; align-items: center; gap: 0.625rem;">
+                    <label for="communicationSkills" class="form-label fw-bold" style="color:#2b59c3">Communication Skills</label>
+                    <div class="star-rating" style="display: flex; font-size: 1.5rem;" id="communicationSkills">
+                        {% for i in "12345" %}
+                            <i class="fas fa-star {% if form.communication_skills.value|default_if_none:0 >= forloop.counter %}checked{% else %}unchecked{% endif %}" data-value="{{ forloop.counter }}"></i>
+                        {% endfor %}
+                    </div>
+                    {{ form.communication_skills|add_class:"d-none" }}
+                </div>
 
-        <label>Engagement</label>
-        {{ form.engagement }}
+                <div class="mb-4 rating-container" style="display: flex; align-items: center; gap: 0.625rem;">
+                    <label for="approachability" class="form-label fw-bold" style="color:#2b59c3">Approachability</label>
+                    <div class="star-rating" style="display: flex; font-size: 1.5rem;" id="approachability">
+                        {% for i in "12345" %}
+                            <i class="fas fa-star {% if form.approachability.value|default_if_none:0 >= forloop.counter %}checked{% else %}unchecked{% endif %}" data-value="{{ forloop.counter }}"></i>
+                        {% endfor %}
+                    </div>
+                    {{ form.approachability|add_class:"d-none" }}
+                </div>
 
-        <label>Professionalism</label>
-        {{ form.professionalism }}
+                <div class="mb-4 rating-container" style="display: flex; align-items: center; gap: 0.625rem;">
+                    <label for="engagement" class="form-label fw-bold" style="color:#2b59c3">Engagement</label>
+                    <div class="star-rating" style="display: flex; font-size: 1.5rem;" id="engagement">
+                        {% for i in "12345" %}
+                            <i class="fas fa-star {% if form.engagement.value|default_if_none:0 >= forloop.counter %}checked{% else %}unchecked{% endif %}" data-value="{{ forloop.counter }}"></i>
+                        {% endfor %}
+                    </div>
+                    {{ form.engagement|add_class:"d-none" }}
+                </div>
 
-        <!-- Comments -->
-        <label>Comments</label>
-        {{ form.comments }}
+                <div class="mb-4 rating-container" style="display: flex; align-items: center; gap: 0.625rem;">
+                    <label for="professionalism" class="form-label fw-bold" style="color:#2b59c3">Professionalism</label>
+                    <div class="star-rating" style="display: flex; font-size: 1.5rem;" id="professionalism">
+                        {% for i in "12345" %}
+                            <i class="fas fa-star {% if form.professionalism.value|default_if_none:0 >= forloop.counter %}checked{% else %}unchecked{% endif %}" data-value="{{ forloop.counter }}"></i>
+                        {% endfor %}
+                    </div>
+                    {{ form.professionalism|add_class:"d-none" }}
+                </div>
 
-        <button type="submit" class="btn btn-primary">Submit Feedback</button>
-    </form>
+                <!-- Comments -->
+                <div class="form-group mb-4">
+                    <label for="comments" class="form-label fw-bold" style="color:#2b59c3">Comments</label>
+                    {{ form.comments|add_class:"form-control rounded-md" }}
+                </div>
 
+                <button type="submit" class="btn btn-primary" style="background-color: #2b59c3; border-color: #2b59c3;  float: right;">Submit Feedback</button>
+            </form>
+        </div>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ratingContainers = document.querySelectorAll('.rating-container');
+
+        ratingContainers.forEach(container => {
+            const stars = container.querySelectorAll('.fa-star');
+            const hiddenInput = container.querySelector('input[type="hidden"]');
+
+            stars.forEach(star => {
+                star.style.backgroundColor = 'transparent';
+                star.style.display = 'inline-block';
+                star.style.cursor = 'pointer';
+                star.style.border = 'none';
+                star.style.outline = 'none';
+
+                star.addEventListener('click', function() {
+                    const value = parseInt(this.getAttribute('data-value'));
+                    hiddenInput.value = value;
+
+                    stars.forEach((s, index) => {
+                        if (index < value) {
+                            s.classList.add('checked');
+                            s.classList.remove('unchecked');
+                            s.style.color = '#ffc107';
+                        } else {
+                            s.classList.remove('checked');
+                            s.classList.add('unchecked');
+                            s.style.color = '#e4e5e9';
+                        }
+                    });
+                });
+
+                star.addEventListener('dblclick', function() {
+                    hiddenInput.value = 0;
+                    stars.forEach(s => {
+                        s.classList.remove('checked');
+                        s.classList.add('unchecked');
+                        s.style.color = '#e4e5e9';
+                    });
+                });
+            });
+        });
+    });
+</script>
 {% endblock %}

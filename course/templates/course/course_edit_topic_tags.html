@@ -8,40 +8,39 @@
 <head>
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-    <link rel="stylesheet" type="text/css" href="{% static 'course/course.css' %}">
 </head>
-<body id="edit-form">
-<div class="custom-container mx-auto p-8 bg-white rounded-lg shadow-xl">
-    <h2 class="text-2xl font-semibold text-teal-600 mb-4 main-color-text">Edit {{ course.course_name }}</h2>
-        <div class="tab-container">
-            <div class="tab">
-                <button class="tablinks" onclick="openTab(event, 'Tab1')">Detail</button>
-                <button class="tablinks" onclick="openTab(event, 'Tab2')">Sessions</button>
-                <button class="tablinks" onclick="openTab(event, 'Tab3')">Topic-Tags</button>
-                {% if sessions %}
-                    <button class="tablinks" onclick="openTab(event, 'Tab4')">Course Materials</button>
-                {% endif %}
-            </div>
+<body>
+<div class="custom-container mx-auto p-8 bg-white rounded-lg shadow-xl" style="max-width: 87.5rem; width: 100%; margin: 0 auto;">
+    <h2 class="text-2xl font-semibold text-teal-600 mb-4" style="font-size: 3.7rem; color: #072Ac8; text-transform: uppercase;">Edit {{ course.course_name }}</h2>
+    <div class="tab-container mt-4" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 0.0625rem solid #ccc;">
+        <div class="tab" style="display: flex; overflow: hidden; background-color: #ffffff;">
+            <button class="tablinks" onclick="openTab(event, 'Tab1')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Detail</button>
+            <button class="tablinks" onclick="openTab(event, 'Tab2')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Sessions</button>
+            <button class="tablinks" onclick="openTab(event, 'Tab3')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Topic-Tags</button>
+            {% if sessions %}
+                <button class="tablinks" onclick="openTab(event, 'Tab4')" style="background-color: inherit; border: none; outline: none; cursor: pointer; padding: 0.875rem 1rem; transition: 0.3s; font-size: 1.0625rem; color: black;">Course Materials</button>
+            {% endif %}
         </div>
+    </div>
 
-        <form method="post" class="space-y-4" enctype="multipart/form-data">
+    <form method="post" class="space-y-4" enctype="multipart/form-data">
         {% csrf_token %}
 
         <!-- Tab1 (Detail) - Link to course_edit_detail -->
-        <div id="Tab1" class="tabcontent"></div>
+        <div id="Tab1" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
 
         <!-- Tab2 (Session) - Link to course_edit_session -->
-        <div id="Tab2" class="tabcontent"></div>
+        <div id="Tab2" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
 
         <!-- Tab3 (Topic-Tags) - Topic Tags Form -->
-        <div id="Tab3" class="tabcontent">
+        <div id="Tab3" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;">
             <div class="form-group" style="flex: 1;">
                 <!-- Topic Dropdown -->
                 <div class="form-group">
-                    <h3>
+                    <h3 style="color: #2b59c3;">
                         Topic
                         <a href="{% url 'course:topic_add' %}" class="ms-2 text-decoration-none">
-                            <i class="fas fa-plus-circle text-success" style="font-size: 0.8em;"></i>
+                            <i class="fas fa-plus-circle text-success" style="font-size: 0.8rem;"></i>
                         </a>
                     </h3>
                     <select id="topic" name="topic" class="form-control">
@@ -54,10 +53,10 @@
 
                 <!-- Tags Checkboxes -->
                 <div class="form-group" id="tags-container">
-                    <h3>
+                    <h3 style="color: #2b59c3;">
                         Tags
                         <a href="{% url 'course:tag_add' %}" class="ms-2 text-decoration-none">
-                            <i class="fas fa-plus-circle text-success" style="font-size: 0.8em;"></i>
+                            <i class="fas fa-plus-circle text-success" style="font-size: 0.8rem;"></i>
                         </a>
                     </h3>
                     <div id="tags-list">
@@ -67,11 +66,11 @@
 
                 <!-- Existing Tags Section -->
                 <div class="form-group">
-                    <h3>Current Existing Tags</h3>
+                    <h3 style="color: #2b59c3;">Current Existing Tags</h3>
                     {% if course.tags.all %}
                     <ul id="current-tags">
                         {% for tag in course.tags.all %}
-                        <li class="tag-item {% if forloop.counter > 5 %}hidden{% endif %}">
+                        <li class="tag-item {% if forloop.counter > 5 %}d-none{% endif %}">
                             {{ tag.name }}
                             <input type="checkbox" name="delete_tag_{{ tag.id }}" id="delete_tag_{{ tag.id }}">
                             <label for="delete_tag_{{ tag.id }}">Delete</label>
@@ -79,7 +78,10 @@
                         {% endfor %}
                     </ul>
                     {% if course.tags.all.count > 5 %}
-                    <p id="see-more-tags" class="text-link">See more</p>
+                    <p id="see-more-tags" class="text-link"
+                    style="color: #389bb0; cursor: pointer; text-decoration: underline; font-size: 0.9rem;"
+                    onmouseover="this.style.color='#2a7a8a';"
+                    onmouseout="this.style.color='#389bb0';"> See more</p>
                     {% endif %}
                     {% else %}
                     <p>No tags added yet.</p>
@@ -89,18 +91,18 @@
         </div>
 
         <!-- Tab4 (Course Materials) -->
-        <div id="Tab4" class="tabcontent"></div>
-
-        <div style="display: flex; justify-content: flex-start; margin-top: 20px;">
-            <button type="submit" class="btn btn-primary" style="background-color: #389bb0; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0 20px; margin-right: 10px;">
+        <div id="Tab4" class="tabcontent" style="display: none; padding: 1.25rem; border: 0.125rem solid #ccc; border-top: none;"></div>
+        <div style="display: flex; justify-content: flex-start; margin-top: 1.25rem; float: right;">
+            <button type="submit" class="btn btn-primary" style="background-color: #6eb2df; height: 2.5rem; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem; margin-right: 0.625rem;">
                 Save
             </button>
-            <a href="{% url 'course:course_list' %}" style="background-color: gray; color: white; height: 40px; display: flex; align-items: center; justify-content: center; padding: 0 20px; text-decoration: none;">
+            <a href="{% url 'course:course_list' %}" style="background-color: gray; color: white; height: 2.5rem; display: flex; align-items: center; justify-content: center; padding: 0 1.25rem; text-decoration: none;">
                 Return to Course List
             </a>
         </div>
     </form>
 </div>
+</body>
 {% endblock %}
 
 {% block extra_js %}
@@ -138,6 +140,8 @@
         } else {
             // Hiển thị tab được chọn và gán lớp "active" cho nút nhấn
             document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.style.backgroundColor = "#6eb2df";
+            evt.currentTarget.style.color = "white";
             evt.currentTarget.className += " active";
 
             // Lưu lại tab đang hoạt động trong localStorage để giữ trạng thái khi tải lại trang
@@ -161,7 +165,6 @@
             {% endfor %}
         ];
 
-        // Define already-selected tags
         const selectedTags = [
             {% for tag in course.tags.all %}
             "{{ tag.id }}",
@@ -171,21 +174,51 @@
         const topicSelect = document.getElementById('topic');
         const tagsListContainer = document.getElementById('tags-list');
         const seeMoreText = document.createElement('p');
-        seeMoreText.id = 'see-more-topic-tags';
+        seeMoreText.id = 'see-more-tags';
         seeMoreText.className = 'text-link';
         seeMoreText.innerHTML = 'See more';
 
-        // Handle Topic Change to Load Tags
+        seeMoreText.style.color = '#389bb0';
+        seeMoreText.style.cursor = 'pointer';
+        seeMoreText.style.textDecoration = 'underline';
+        seeMoreText.style.fontSize = '0.9rem';
+
+        seeMoreText.onmouseover = function() {
+            seeMoreText.style.color = '#2a7a8a';
+        };
+        seeMoreText.onmouseout = function() {
+            seeMoreText.style.color = '#389bb0';
+        };
+
+        // Append the "See more" text to the container
+        tagsListContainer.appendChild(seeMoreText);
+        let visibleItems = 5; // Number of tags to show initially
+        const itemsToShow = 5; // Number of tags to show on each "See more" click
+
+        // Add "See more" functionality once
+        seeMoreText.addEventListener('click', function() {
+            const hiddenItems = tagsListContainer.querySelectorAll('.d-none');
+            Array.from(hiddenItems).slice(0, itemsToShow).forEach(tagItem => {
+                tagItem.classList.remove('d-none');
+            });
+
+            // Hide "See more" if there are no more hidden items
+            if (tagsListContainer.querySelectorAll('.d-none').length === 0) {
+                seeMoreText.style.display = 'none';
+            }
+        });
+
+        // Handle topic change
         topicSelect.addEventListener('change', function() {
             const selectedTopicId = this.value;
             tagsListContainer.innerHTML = ''; // Clear previous tags
-            let visibleItems = 5;
+            visibleItems = 5; // Reset visible items count for each topic selection
 
             if (selectedTopicId) {
-                // Filter tags by the selected topic
+                // Filter and display tags based on selected topic
                 const filteredTags = tags.filter(tag => tag.topicId === selectedTopicId && !selectedTags.includes(tag.id));
 
-                // Initially display the first 5 tags
+                // Display the first set of tags (up to visibleItems)
                 filteredTags.slice(0, visibleItems).forEach(tag => {
                     const tagItem = document.createElement('div');
                     tagItem.className = 'tag-item';
@@ -196,10 +229,10 @@
                     tagsListContainer.appendChild(tagItem);
                 });
 
-                // Hide the rest of the tags
+                // Add remaining tags as hidden
                 filteredTags.slice(visibleItems).forEach(tag => {
                     const tagItem = document.createElement('div');
-                    tagItem.className = 'tag-item hidden'; // Initially hidden
+                    tagItem.className = 'tag-item d-none';
                     tagItem.innerHTML = `
                         <input type="checkbox" name="tags" class="tag-checkbox" value="${tag.id}" id="tag_${tag.id}">
                         <label for="tag_${tag.id}">${tag.name}</label>
@@ -207,73 +240,14 @@
                     tagsListContainer.appendChild(tagItem);
                 });
 
-                // Add "See more" text if there are more than 5 tags
+                // Display or hide "See more" text based on tag count
                 if (filteredTags.length > visibleItems) {
                     tagsListContainer.appendChild(seeMoreText);
-                    seeMoreText.classList.remove('disabled'); // Make sure it's clickable
+                    seeMoreText.style.display = 'inline'; // Show "See more"
                 } else {
-                    seeMoreText.classList.add('disabled'); // Disable "See more" if no more items
-                }
-
-                // Handle "See more" functionality
-                seeMoreText.addEventListener('click', function() {
-                    const hiddenItems = tagsListContainer.querySelectorAll('.hidden');
-                    if (hiddenItems.length > 0) {
-                        // Show 5 more hidden tags
-                        Array.from(hiddenItems).slice(0, 5).forEach(tagItem => {
-                            tagItem.classList.remove('hidden');
-                        });
-
-                        // Disable "See more" if all tags are shown
-                        if (tagsListContainer.querySelectorAll('.hidden').length === 0) {
-                            seeMoreText.classList.add('disabled');
-                        }
-                    }
-                });
-            }
-        });
-
-        $(document).ready(function() {
-            // Handle "See more" functionality for tags
-            const tagItems = $('.tag-item');
-            const seeMoreText = $('#see-more-tags'); // Change this to text
-            const itemsToShow = 5;
-            let visibleItems = 5;
-
-            // Initially hide items beyond the first 5
-            tagItems.slice(visibleItems).addClass('hidden');
-
-            function showMoreTags() {
-                const hiddenItems = $('.tag-item.hidden');
-
-                if (hiddenItems.length === 0) {
-                    // Do nothing if no more hidden items
-                    return;
-                }
-
-                // Reveal 5 more tags
-                const itemsToReveal = hiddenItems.slice(0, itemsToShow);
-                itemsToReveal.removeClass('hidden');
-                visibleItems += itemsToShow;
-
-                // If all tags are revealed, disable further actions but keep "See more" visible
-                if (visibleItems >= tagItems.length) {
-                    seeMoreText.addClass('disabled'); // Mark as disabled
+                    seeMoreText.style.display = 'none'; // Hide "See more" if not needed
                 }
             }
-            seeMoreText.on('click', function() {
-                if (!$(this).hasClass('disabled')) {
-                    showMoreTags();
-                }
-            });
-        });
-
-
-        // Collect selected tag IDs before form submission
-        form.addEventListener('submit', function() {
-            const selectedTagIds = Array.from(tagsListContainer.querySelectorAll('.tag-checkbox:checked'))
-                .map(checkbox => checkbox.value);
-            selectedTagsInput.value = selectedTagIds.join(',');
         });
     });
 </script>

@@ -8,7 +8,7 @@ from module_group.models import ModuleGroup, Module
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import F, FloatField, ExpressionWrapper, Count
-from django.http import Http404
+from django.http import Http404, JsonResponse
 
 '''def feedback_list(request):
     module_groups = ModuleGroup.objects.all()
@@ -28,27 +28,80 @@ from django.http import Http404
 User = get_user_model()
 
 def feedback_list(request):
-    module_groups = ModuleGroup.objects.all()
-    modules = Module.objects.all()
-    instructor_feedbacks = InstructorFeedback.objects.all()
-    course_feedbacks = CourseFeedback.objects.all()
-    training_feedbacks = TrainingProgramFeedback.objects.all()
-
-    # Fetch instructors and courses
-    instructors = User.objects.filter(id__in=Course.objects.values_list('instructor_id', flat=True)).distinct()  # Assuming you have a role model for instructors
+    # Fetch all courses and instructors
     courses = Course.objects.all()
-    training_programs = TrainingProgram.objects.all()
+    course_instructors = courses.values_list('instructor', flat=True).distinct()
+    instructors = User.objects.filter(id__in=course_instructors)
 
+    # Separate instructor and course feedback for the first two tabs
+    instructor_feedbacks_all = InstructorFeedback.objects.all()
+    course_feedbacks_all = CourseFeedback.objects.all()
+
+    # Pagination for Course Feedback Tab
+    course_paginator = Paginator(course_feedbacks_all, 8)
+    course_page_obj = course_paginator.get_page(request.GET.get('course_page'))
+
+    # Pagination for Instructor Feedback Tab
+    instructor_paginator = Paginator(instructor_feedbacks_all, 8)
+    instructor_page_obj = instructor_paginator.get_page(request.GET.get('instructor_page'))
+
+    # Render data for all tabs
     return render(request, 'feedback_list.html', {
-        'instructor_feedbacks': instructor_feedbacks,
-        'course_feedbacks': course_feedbacks,
-        'training_feedbacks': training_feedbacks,
-        'module_groups': module_groups,
-        'modules': modules,
-        'instructors': instructors,
         'courses': courses,
-        'training_programs': training_programs  # Add training programs as well
+        'instructors': instructors,
+        'module_groups': ModuleGroup.objects.all(),
+        'modules': Module.objects.all(),
+        'instructor_page_obj': instructor_page_obj,  # For Instructor Feedback Tab
+        'course_page_obj': course_page_obj,  # For Course Feedback Tab
     })
+
+def feedback_chart_data(request):
+    selected_course_id = request.GET.get('course', 'all')
+    selected_instructor_id = request.GET.get('instructor', 'all')
+
+    # Prepare data for Course Criteria (Stacked Bar Chart)
+    course_criteria = ['course_material', 'practical_applications', 'clarity_of_explanation',
+                       'course_structure', 'support_materials']
+    course_feedbacks = CourseFeedback.objects.filter(course_id=selected_course_id) if selected_course_id != 'all' else CourseFeedback.objects.all()
+    course_criteria_counts = {criterion: {star: 0 for star in range(1, 6)} for criterion in course_criteria}
+    course_avg_rating_counts = {star: 0 for star in range(1, 6)}
+
+    for feedback in course_feedbacks:
+        for criterion in course_criteria:
+            rating = getattr(feedback, criterion, 0)
+            if 1 <= rating <= 5:
+                course_criteria_counts[criterion][rating] += 1
+        avg_rating = feedback.average_rating()
+        if 1 <= avg_rating <= 5:
+            course_avg_rating_counts[int(avg_rating)] += 1
+
+    # Prepare data for Instructor Criteria (Stacked Bar Chart)
+    instructor_criteria = ['course_knowledge', 'communication_skills', 'approachability',
+                           'engagement', 'professionalism']
+    instructor_feedbacks = InstructorFeedback.objects.filter(instructor=selected_instructor_id) if selected_instructor_id != 'all' else InstructorFeedback.objects.all()
+    instructor_criteria_counts = {criterion: {star: 0 for star in range(1, 6)} for criterion in instructor_criteria}
+    instructor_avg_rating_counts = {star: 0 for star in range(1, 6)}
+
+    for feedback in instructor_feedbacks:
+        for criterion in instructor_criteria:
+            rating = getattr(feedback, criterion, 0)
+            if 1 <= rating <= 5:
+                instructor_criteria_counts[criterion][rating] += 1
+        avg_rating = feedback.average_rating()
+        if 1 <= avg_rating <= 5:
+            instructor_avg_rating_counts[int(avg_rating)] += 1
+
+    return JsonResponse({
+        'course': {
+            'criteria_counts': course_criteria_counts,
+            'avg_rating_counts': course_avg_rating_counts,
+        },
+        'instructor': {
+            'criteria_counts': instructor_criteria_counts,
+            'avg_rating_counts': instructor_avg_rating_counts,
+        }
+    })
+
 
 def give_instructor_feedback(request, instructor_id):
     instructor = User.objects.get(pk=instructor_id)
@@ -199,3 +252,4 @@ def helpful_rate(request, pk):
     else:
         feedback.helpful_rate.add(request.user)
     return redirect('feedback:course_all_feedback', course_id=feedback.course.id)
+

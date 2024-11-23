@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include "menuReport.html" %}
+
+<!-- Course Filter Dropdown -->
+<form method="get">
+    <label for="courseFilter">Select Course:</label>
+    <select name="course" id="courseFilter" onchange="this.form.submit()">
+        <option value="">All Courses</option>
+        {% for course in all_courses_names %}
+            <option value="{{ course.id }}" {% if course.id == selected_course_id %}selected{% endif %}>
+                {{ course.course_name }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
+<!-- Pie Chart -->
+<div class="chart-container" style="height: 25rem;">
+    <canvas id="courseDurationPieChart"></canvas>
+</div>
+
+<!-- Table for Report Data -->
+<table>
+    <thead>
+        <tr>
+            <th>Course</th>
+            <th>User</th>
+            <th>Total Duration (Hours)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for course, user_data in readable_durations.items %}
+            {% for user, duration in user_data.items %}
+                <tr>
+                    <td>{{ course }}</td>
+                    <td>{{ user }}</td>
+                    <td>{{ duration }}</td>
+                </tr>
+            {% endfor %}
+        {% endfor %}
+    </tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Prepare data for the pie chart (from the backend)
+    const chartLabels = {{ chart_labels|safe }};
+    const chartData = {{ chart_data|safe }};
+
+    console.log('Chart Labels:', chartLabels);
+    console.log('Chart Data:', chartData);
+
+    // If no data for the selected course, display a warning and stop further execution
+    if (chartData.length === 0) {
+        console.warn('No data available for the selected course.');
+    } else {
+        // Call the function to generate the pie chart
+        generatePieChart(chartLabels, chartData);
+    }
+
+    function generatePieChart(labels, data) {
+        const ctx = document.getElementById('courseDurationPieChart').getContext('2d');
+
+        // Generate the pie chart
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,  // Time spent labels (e.g., '1 hour', '4 hours')
+                datasets: [{
+                    data: data,  // Count of users per time spent
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                    ],
+                }],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Time Spent on Selected Course',
+                    },
+                },
+            },
+        });
+    }
+</script>
+{% endblock %}

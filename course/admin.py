@@ -132,6 +132,10 @@ class CourseMaterialResource(resources.ModelResource):
 
 # Define the resource for ReadingMaterial with CourseMaterial details
 class ReadingMaterialResource(resources.ModelResource):
+    material = fields.Field(attribute='material',
+        column_name='material_id',
+        widget=ForeignKeyWidget(CourseMaterial, 'id')
+    )
     content = fields.Field(
         attribute='content',
         column_name='content'
@@ -141,7 +145,7 @@ class ReadingMaterialResource(resources.ModelResource):
 
     class Meta:
         model = ReadingMaterial
-        fields = ('id', 'title', 'content', 'material_session', 'material_type')
+        fields = ('id', 'material_id', 'title', 'content', 'material_session', 'material_type')
         import_id_fields = ('title', 'content',)
         skip_unchanged = True
         report_skipped = True
@@ -160,6 +164,7 @@ class ReadingMaterialResource(resources.ModelResource):
         for row in dataset.dict:
             title = row.get('title')
             material_session = row.get('material_session')
+            material_id = row.get('material_id')  # For material reference
             content = row.get('content')  # For content
             material_type = row.get('material_type')
 
@@ -177,6 +182,7 @@ class ReadingMaterialResource(resources.ModelResource):
 
                 # Retrieve the CourseMaterial object
                 course_material, _ = CourseMaterial.objects.get_or_create(
+                    id=material_id,
                     session=session,
                     material_id=reading_material.id,
                     material_type=material_type,
