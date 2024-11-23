@@ -146,6 +146,19 @@ def duplicate_course(original_course):
         code_counter += 1
     duplicated_course.course_code = f"{original_code}{code_counter}"
 
+    if original_course.image:
+        # Get the original image file name and extension
+        original_name = original_course.image.name.split('/')[-1]
+        file_extension = original_name.split('.')[-1]
+
+        # Create new image name with duplicated course code
+        new_image_name = f"{duplicated_course.course_code}.{file_extension}"
+
+        # Open and read the original image
+        with original_course.image.open('rb') as img_file:
+            # Save as new image file
+            duplicated_course.image.save(new_image_name, img_file, save=False)
+
     duplicated_course.save()  # Save the duplicated course
 
     # Duplicate sessions related to the duplicated course
