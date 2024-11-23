@@ -80,13 +80,13 @@
                                     <span style="margin-left: 0.625rem; color: #2b59c3;">Add PDF</span>
                                 </button>
                             </div>
-                            {% endif %}
                             <div style="display: flex; align-items: center;">
                                 <a href="{% url 'course:reorder_course_materials' course.pk selected_session.id %}" class="btn btn-secondary" style="border: none; background: none; display: flex; align-items: center;">
                                     <i class="fas fa-arrows-alt" style="font-size: 1.5rem; color: #2b59c3;"></i>
                                     <span style="margin-left: 0.625rem; color: #2b59c3;">Reorder Material</span>
                                 </a>
                             </div>
+                            {% endif %}
                             <!-- Select Assessment Section -->
                             <div class="form-group" style="flex: 1; margin-bottom: 1.25rem;">
                                 <h3 style="color: #2b59c3; margin-bottom: 0.625rem;">Assessment</h3>
@@ -162,9 +162,9 @@
                         {% if not editing_material %}
                         <h2 style="margin: 0; font-size: 1.6875rem; margin-bottom: 0.5rem; color: #2b59c3;">Add New Content</h2>
                         <div id="content-display" style="border: 0.0625rem solid #ccc; padding: 0.9375rem; margin-top: 1.25rem; display: none;">
-                            <div id="content-preview" style="max-height: 25rem; margin-top: 0.625rem; overflow-y: auto;"></div>
+                            <div id="content-preview" style="margin-top: 0.625rem;"></div>
                         </div>
-                        <div id="reading-materials" style="max-height: 25rem; overflow-y: auto;">
+                        <div id="reading-materials" style="max-height: 20rem; overflow-y: auto; margin-bottom: 0.625rem;">
                             <div class="reading-material-entry" style="display: flex; align-items: flex-start; margin-bottom: 0.625rem; font-size: 2.25rem; font-weight: bold;">
                                 <div style="flex-grow: 1;">
                                     <input type="text" name="reading_material_title[]" class="form-control" value="{{ selected_session.name }}" placeholder="Reading Material Title">
@@ -183,7 +183,7 @@
                         </div>
                         <div id="uploaded-pdfs" style="margin-bottom: 0.625rem;"></div>
                         {% endif %}
-
+                        
                         <!-- Edit Reading Material Section -->
                         {% if editing_material %}
                         <div id="edit-reading-materials">
