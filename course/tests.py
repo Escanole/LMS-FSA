@@ -1,11 +1,11 @@
 from django.urls import reverse
-from .models import Course, Enrollment, Transaction, Session, SessionCompletion, ReadingMaterial, CourseMaterial
+from .models import Course, Enrollment, Transaction, Session, SessionCompletion, ReadingMaterial, CourseMaterial, Tag, Topic
 from django.contrib.auth import get_user_model
 from certification.models import Certification  # Assuming this is where your Certification model is defined
 from django.utils import timezone
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
-from course.models import Course, Session, ReadingMaterial, CourseMaterial, Assessment
+from course.models import Course, Session, ReadingMaterial, CourseMaterial
 from io import BytesIO
 from django.core.files.uploadedfile import SimpleUploadedFile
 
@@ -395,106 +395,204 @@ class CourseCertificationTests(TestCase):
         self.assertIn(timezone.now().strftime('%Y-%m-%d'), certification.generated_html_content)  # Check awarded date
         self.assertIn(str(timezone.now().year), certification.generated_html_content)  # Check awarded year
 
-# class CourseListTests(TestCase):
-#     def setUp(self):
-#         User = get_user_model()
-#         # Create users
-#         self.superuser = User.objects.create_superuser(
-#             username='superuser',
-#             password='superpassword'
-#         )
-#         self.instructor = User.objects.create_user(
-#             username='instructor',
-#             password='instructorpassword'
-#         )
-#         self.student = User.objects.create_user(
-#             username='student',
-#             password='studentpassword'
-#         )
+class CourseListTests(TestCase):
+    def setUp(self):
+        User = get_user_model()
+        # Create users
+        self.superuser = User.objects.create_superuser(
+            username='superuser',
+            password='superpassword'
+        )
+        self.instructor = User.objects.create_user(
+            username='instructor',
+            password='instructorpassword'
+        )
+        self.student = User.objects.create_user(
+            username='student',
+            password='studentpassword'
+        )
 
-#         # Create courses
-#         self.published_course = Course.objects.create(
-#             course_name="Published Course",
-#             description="This course is published.",
-#             course_code="PUB101",
-#             published=True
-#         )
-#         self.unpublished_course = Course.objects.create(
-#             course_name="Unpublished Course",
-#             description="This course is not published.",
-#             course_code="UNPUB101",
-#             published=False
-#         )
-#         self.instructor_course = Course.objects.create(
-#             course_name="Instructor Course",
-#             description="Course taught by instructor.",
-#             course_code="INST101",
-#             published=True,
-#             instructor=self.instructor
-#         )
+        # Create courses
+        self.published_course = Course.objects.create(
+            course_name="Published Course",
+            description="This course is published.",
+            course_code="PUB101",
+            published=True
+        )
+        self.unpublished_course = Course.objects.create(
+            course_name="Unpublished Course",
+            description="This course is not published.",
+            course_code="UNPUB101",
+            published=False
+        )
+        self.instructor_course = Course.objects.create(
+            course_name="Instructor Course",
+            description="Course taught by instructor.",
+            course_code="INST101",
+            published=True,
+            instructor=self.instructor
+        )
 
-#         # Create a session and material for the published course
-#         self.session = Session.objects.create(course=self.published_course, name="Session 1", order=1)
-#         self.reading_material = ReadingMaterial.objects.create(
-#             title="Reading Material for Published Course",
-#             content="Content of reading material for published course"
-#         )
-#         CourseMaterial.objects.create(
-#             session=self.session,
-#             material_id=self.reading_material.id,
-#             material_type='reading',
-#             title=self.reading_material.title,
-#             order=1
-#         )
+        # Create a session and material for the published course
+        self.session = Session.objects.create(course=self.published_course, name="Session 1", order=1)
+        self.reading_material = ReadingMaterial.objects.create(
+            title="Reading Material for Published Course",
+            content="Content of reading material for published course"
+        )
+        CourseMaterial.objects.create(
+            session=self.session,
+            material_id=self.reading_material.id,
+            material_type='reading',
+            title=self.reading_material.title,
+            order=1
+        )
 
-#     def test_course_list_as_superuser(self):
-#         self.client.login(username='superuser', password='superpassword')
-#         response = self.client.get(reverse('course:course_list'))
-#         self.assertEqual(response.status_code, 200)
-#         self.assertContains(response, "Published Course")
-#         self.assertContains(response, "Unpublished Course")
-#         self.assertContains(response, "Instructor Course")
+    def test_course_list_as_superuser(self):
+        self.client.login(username='superuser', password='superpassword')
+        response = self.client.get(reverse('course:course_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Published Course")
+        self.assertContains(response, "Unpublished Course")
+        self.assertContains(response, "Instructor Course")
 
-#     def test_course_list_as_instructor(self):
-#         self.client.login(username='instructor', password='instructorpassword')
-#         response = self.client.get(reverse('course:course_list'))
-#         self.assertEqual(response.status_code, 200)
-#         self.assertContains(response, "Published Course")
-#         self.assertContains(response, "Instructor Course")
-#         self.assertNotContains(response, "Unpublished Course")  # Assuming instructors see only published courses
+    def test_course_list_as_instructor(self):
+        self.client.login(username='instructor', password='instructorpassword')
+        response = self.client.get(reverse('course:course_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Published Course")
+        self.assertContains(response, "Instructor Course")
+        self.assertNotContains(response, "Unpublished Course")  # Assuming instructors see only published courses
 
-#     def test_course_list_as_student(self):
-#         self.client.login(username='student', password='studentpassword')
-#         response = self.client.get(reverse('course:course_list'))
-#         self.assertEqual(response.status_code, 200)
+    def test_course_list_as_student(self):
+        self.client.login(username='student', password='studentpassword')
+        response = self.client.get(reverse('course:course_list'))
         
-#         # Check that the published course is in the response
-#         self.assertContains(response, "Published Course")
-        
-#         # Ensure the student does not see the unpublished course
-#         self.assertNotContains(response, "Unpublished Course")
-        
-#         # Ensure the student does not see the instructor's course if it's unpublished
-#         self.assertContains(response, "Instructor Course")  # Assuming this course is published
+        # Debugging output
+        print("Response status code:", response.status_code)
+        print("Response content:", response.content.decode())
 
-#     def test_course_list_pagination(self):
-#         # Create more courses for pagination testing
-#         for i in range(15):
-#             Course.objects.create(
-#                 course_name=f"Course {i+1}",
-#                 description="This is a test course.",
-#                 course_code=f"COURSE{i+1}",
-#                 published=True
-#             )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Published Course")
+        self.assertNotContains(response, "Unpublished Course")
 
-#         self.client.login(username='student', password='studentpassword')
-#         response = self.client.get(reverse('course:course_list') + '?page=2')  # Assuming 9 courses per page
-#         self.assertEqual(response.status_code, 200)
+    def test_course_list_pagination(self):
+        # Create more courses for pagination testing
+        for i in range(15):
+            course = Course.objects.create(
+                course_name=f"Course {i+1}",
+                description="This is a test course.",
+                course_code=f"COURSE{i+1}",
+                published=True  # Ensure all courses are published
+            )
+            session = Session.objects.create(course=course, name=f"Session for Course {i+1}", order=1)
+            reading_material = ReadingMaterial.objects.create(
+                title=f"Reading Material for Course {i+1}",
+                content="Content of reading material for this course"
+            )
+            CourseMaterial.objects.create(
+                session=session,
+                material_id=reading_material.id,
+                material_type='reading',
+                title=reading_material.title,
+                order=1
+            )
 
-#         # Check that the second page contains "Course 10" and "Course 11"
-#         self.assertContains(response, "Course 10")
-#         self.assertContains(response, "Course 11")
+        self.client.login(username='student', password='studentpassword')
+        response = self.client.get(reverse('course:course_list') + '?page=2')  # Assuming 9 courses per page
+        self.assertEqual(response.status_code, 200)
+
+        # Debugging output
+        print("Response content:", response.content.decode())
         
-#         # Ensure the first page's content is not on the second page
-#         self.assertNotContains(response, "Course 1")  # Ensure Course 1 is not on the second page
-#         self.assertNotContains(response, "Course 2")  # Ensure Course 2 is not on the second page
+        # Check that the second page contains "Course 10" and "Course 11"
+        self.assertContains(response, "Course 10")
+        self.assertContains(response, "Course 11")
+
+    def test_recommended_courses_logic(self):
+        # Log in the student
+        self.client.login(username='student', password='studentpassword')
+
+        # Create topics
+        topic_python = Topic.objects.create(name="Python")
+        topic_data_science = Topic.objects.create(name="Data Science")
+
+        # Create courses with tags
+        course1 = Course.objects.create(
+            course_name="Python Basics",
+            description="Learn Python from scratch",
+            course_code="PY101",
+            published=True
+        )
+        course2 = Course.objects.create(
+            course_name="Advanced Python",
+            description="Deep dive into Python",
+            course_code="PY201",
+            published=True
+        )
+        course3 = Course.objects.create(
+            course_name="Data Science with Python",
+            description="Learn data science using Python",
+            course_code="DS101",
+            published=True
+        )
+
+        # Create tags with topic_id
+        tag_python = Tag.objects.create(name="Python", topic=topic_python)
+        tag_data_science = Tag.objects.create(name="Data Science", topic=topic_data_science)
+
+        # Assign tags to courses
+        course1.tags.add(tag_python)  # Course 1 has the Python tag
+        course2.tags.add(tag_python)   # Course 2 also has the Python tag
+        course3.tags.add(tag_data_science)  # Course 3 has a different tag
+
+        # Create materials for each course
+        session1 = Session.objects.create(course=course1, name="Session 1", order=1)
+        reading_material1 = ReadingMaterial.objects.create(
+            title="Reading Material for Python Basics",
+            content="Content for Python Basics"
+        )
+        CourseMaterial.objects.create(
+            session=session1,
+            material_id=reading_material1.id,
+            material_type='reading',
+            title=reading_material1.title,
+            order=1
+        )
+
+        session2 = Session.objects.create(course=course2, name="Session 2", order=1)
+        reading_material2 = ReadingMaterial.objects.create(
+            title="Reading Material for Advanced Python",
+            content="Content for Advanced Python"
+        )
+        CourseMaterial.objects.create(
+            session=session2,
+            material_id=reading_material2.id,
+            material_type='reading',
+            title=reading_material2.title,
+            order=1
+        )
+
+        session3 = Session.objects.create(course=course3, name="Session 3", order=1)
+        reading_material3 = ReadingMaterial.objects.create(
+            title="Reading Material for Data Science with Python",
+            content="Content for Data Science with Python"
+        )
+        CourseMaterial.objects.create(
+            session=session3,
+            material_id=reading_material3.id,
+            material_type='reading',
+            title=reading_material3.title,
+            order=1
+        )
+
+        # Enroll the student in course1
+        Enrollment.objects.create(student=self.student, course=course1, is_active=True)
+
+        # Now, when the student views the course list, they should see recommendations
+        response = self.client.get(reverse('course:course_list'))
+
+        # Debugging output
+        print("Response content:", response.content.decode())
+
+        # Check that the recommended courses include course2 (similar tag)
+        self.assertContains(response, "Advanced Python")
