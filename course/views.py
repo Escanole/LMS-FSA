@@ -441,6 +441,24 @@ def course_edit_detail(request, pk):
         'first_session_id': first_session_id,
     })
 
+def apply_discount(request):
+    if request.method == 'POST':
+        selected_courses = request.POST.getlist("selected_courses[]")
+        discount = request.POST.get("discount")
+        
+        # Xử lý logic lưu giảm giá tại đây
+        # Ví dụ: gán discount cho mỗi khóa học
+        for course_id in selected_courses:
+            course = Course.objects.get(id=course_id)
+            course.discount = discount
+            course.save()
+
+        return redirect('course:apply_discount')  # Tên URL của view này
+
+    # Lấy tất cả các khóa học để hiển thị trong danh sách
+    all_courses = Course.objects.all()
+    return render(request, 'course/apply_discount.html', {'all_courses': all_courses})
+
 def course_edit_session(request, pk):
     course = get_object_or_404(Course, pk=pk)
     sessions = Session.objects.filter(course=course).order_by('order')

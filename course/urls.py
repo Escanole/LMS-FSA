@@ -36,4 +36,6 @@ urlpatterns = [
     path('tags/add/', views.tag_add, name='tag_add'),
     path('tags/edit/<int:pk>/', views.tag_edit, name='tag_edit'),
     path('tags/delete/<int:pk>/', views.tag_delete, name='tag_delete'),
+    # Discount
+    path('apply-discount/', views.apply_discount, name='apply_discount'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
