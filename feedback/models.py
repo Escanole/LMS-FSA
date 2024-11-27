@@ -6,6 +6,7 @@ from training_program.models import TrainingProgram  # Assuming Training Program
 class InstructorFeedback(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     instructor = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="instructor_feedback", on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, related_name="feedbacks", on_delete=models.CASCADE)  # Link feedback to a specific course
 
     course_knowledge = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])
     communication_skills = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])
