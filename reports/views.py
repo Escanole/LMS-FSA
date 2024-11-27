@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from course.models import Course, Enrollment, Session, Completion, Tag, CourseMaterial, MaterialViewingDuration
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, F, Q, Sum, Avg
 from module_group.models import ModuleGroup
 from user.models import User, Student, Profile
 from collections import Counter
@@ -502,3 +502,85 @@ def course_duration_report(request):
         'chart_labels': chart_labels,
         'chart_data': chart_data,
     })
+
+def price_report(request):
+    """Generate comprehensive price analysis report for courses"""
+    
+    # Top 5 courses with highest original price
+    top_price_courses = Course.objects.filter(published=True).order_by('-price')[:5]
+    price_chart_data = {
+        'labels': [course.course_name for course in top_price_courses],
+        'prices': [float(course.price) for course in top_price_courses]
+    }
+    
+    # Top 5 courses with highest discount percentage
+    top_discount_courses = Course.objects.filter(
+        published=True, 
+        discount__gt=0
+    ).order_by('-discount')[:5]
+    discount_chart_data = {
+        'labels': [course.course_name for course in top_discount_courses],
+        'discounts': [float(course.discount) for course in top_discount_courses]
+    }
+    
+    # Lowest price courses after discount
+    lowest_price_courses = Course.objects.filter(published=True).order_by('price')
+    lowest_after_discount = []
+    
+    for course in lowest_price_courses:
+        discounted_price = course.price * (1 - course.discount/100)
+        lowest_after_discount.append({
+            'course': course,
+            'original_price': float(course.price),
+            'discount': float(course.discount),
+            'final_price': float(discounted_price)
+        })
+    
+    # Sort by final price and get top 5 cheapest
+    lowest_after_discount.sort(key=lambda x: x['final_price'])
+    lowest_after_discount = lowest_after_discount[:5]
+    
+    # Prepare scatter plot data
+    scatter_data = [{
+        'x': item['original_price'],
+        'y': item['final_price'],
+        'label': item['course'].course_name
+    } for item in lowest_after_discount]
+    
+    # Discount rate analysis
+    discount_analysis = []
+    courses_with_discount = Course.objects.filter(
+        published=True,
+        discount__gt=0
+    ).order_by('-discount')
+    
+    for course in courses_with_discount:
+        original_price = float(course.price)
+        discount_amount = original_price * (float(course.discount)/100)
+        final_price = original_price - discount_amount
+        
+        discount_analysis.append({
+            'course': course.course_name,
+            'original_price': original_price,
+            'final_price': final_price,
+            'savings': discount_amount
+        })
+    
+    # Prepare grouped column chart data, So sánh giá gốc và giá sau chiết khấu cho từng khóa học.
+    group_chart_data = {
+        'labels': [item['course'] for item in discount_analysis],
+        'original_prices': [item['original_price'] for item in discount_analysis],
+        'final_prices': [item['final_price'] for item in discount_analysis],
+        'savings': [item['savings'] for item in discount_analysis]
+    }
+
+    context = {
+        'price_chart_data': json.dumps(price_chart_data),
+        'discount_chart_data': json.dumps(discount_chart_data),
+        'scatter_data': json.dumps(scatter_data),
+        'group_chart_data': json.dumps(group_chart_data),
+        'lowest_after_discount': lowest_after_discount,
+        'discount_analysis': discount_analysis
+    }
+    
+    return render(request, 'reports/price_report.html', context)

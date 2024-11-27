@@ -28,4 +28,6 @@ urlpatterns = [
     path('user/login-frequency-report/', views.login_frequency_report, name='login_frequency_report'),
     path('user/user_duration_login/', views.user_duration_login, name='user_duration_login'),
 
+    path('price-report/', views.price_report, name='price_report'),
+
 ]
