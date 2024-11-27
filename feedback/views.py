@@ -103,19 +103,29 @@ def feedback_chart_data(request):
     })
 
 
-def give_instructor_feedback(request, instructor_id):
-    instructor = User.objects.get(pk=instructor_id)
+def give_instructor_feedback(request, instructor_id, course_id):
+    # Retrieve the instructor and course based on the provided IDs
+    try:
+        instructor = User.objects.get(pk=instructor_id)
+        course = Course.objects.get(pk=course_id)
+    except (User.DoesNotExist, Course.DoesNotExist):
+        raise Http404("Instructor or Course not found")
+
     if request.method == 'POST':
         form = InstructorFeedbackForm(request.POST)
         if form.is_valid():
+            # Save feedback but do not commit yet
             feedback = form.save(commit=False)
-            feedback.student = request.user
-            feedback.instructor = instructor
-            feedback.save()
-            return redirect('feedback:feedback_success')
+            feedback.student = request.user  # Set the current logged-in user as the student
+            feedback.instructor = instructor  # Associate the feedback with the instructor
+            feedback.course = course  # Associate the feedback with the specific course
+            feedback.save()  # Save the feedback to the database
+            return redirect('feedback:feedback_success')  # Redirect to a success page
     else:
+        # If GET request, create an empty form
         form = InstructorFeedbackForm()
-    return render(request, 'feedback_Instructor.html', {'form': form, 'instructor': instructor})
+
+    return render(request, 'feedback_Instructor.html', {'form': form, 'instructor': instructor, 'course': course})
 
 def give_course_feedback(request, course_id):
     course = get_object_or_404(Course, id=course_id)
