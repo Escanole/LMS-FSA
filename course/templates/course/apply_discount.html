@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}Apply Discount{% endblock %}
+
+{% block content %}
+<h2>Apply Discount</h2>
+<form method="POST" action="{% url 'course:apply_discount' %}">
+    {% csrf_token %}
+    <div class="row">
+        <!-- Select Courses -->
+        <div class="col-md-5">
+            <div class="form-group">
+                <label for="selected_courses">Select Courses</label>
+                <select id="selected_courses" name="selected_courses[]" class="form-select select2" multiple>
+                    {% for course in all_courses %}
+                        <option value="{{ course.id }}" {% if course.id|stringformat:"s" in selected_courses %}selected{% endif %}>
+                            {{ course.course_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Discount Field -->
+        <div class="col-md-3">
+            <div class="form-group">
+                <label for="discount">Discount (%)</label>
+                <input type="number" id="discount" name="discount" class="form-control" placeholder="Enter discount" required>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-primary">Apply Discount</button>
+    <a href="{% url 'course:course_list' %}" class="btn btn-secondary px-1rem py-0.5rem rounded ml-2">Back to Course List</a>
+</form>
+{% endblock %}
+
+{% block extra_css %}
+<!-- Thêm Select2 CSS vào trang này -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+{% endblock %}
+
+{% block extra_js %}
+<!-- Thêm Select2 JS vào trang này -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#selected_courses').select2({
+            placeholder: "Select courses",
+            allowClear: true,
+            width: 'resolve'
+        });
+    });
+</script>
+{% endblock %}
