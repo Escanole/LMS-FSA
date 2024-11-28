@@ -446,10 +446,13 @@ def apply_discount(request):
         selected_courses = request.POST.getlist("selected_courses[]")
         discount = request.POST.get("discount")
         
+        if "all_courses" in selected_courses:
+            courses_to_update = Course.objects.all()
+        else:
+            courses_to_update = Course.objects.filter(id__in=selected_courses)
         # Xử lý logic lưu giảm giá tại đây
         # Ví dụ: gán discount cho mỗi khóa học
-        for course_id in selected_courses:
-            course = Course.objects.get(id=course_id)
+        for course in courses_to_update:
             course.discount = discount
             course.save()
 
@@ -1310,3 +1313,4 @@ def tag_delete(request, pk):
         messages.success(request, 'Tag deleted successfully.')
         return redirect('course:topic_tag_list')
     return render(request, 'topic-tag/tag_confirm_delete.html', {'object': tag, 'title': 'Delete Tag'})
+
