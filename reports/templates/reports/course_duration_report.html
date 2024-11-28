@@ -13,6 +13,16 @@
             </option>
         {% endfor %}
     </select>
+
+    <label for="learningPathFilter">Select Learning Path:</label>
+    <select name="learning_path" id="learningPathFilter" onchange="this.form.submit()">
+        <option value="">All Learning Paths</option>
+        {% for path in all_learning_paths %}
+            <option value="{{ path.id }}" {% if path.id == selected_learning_path_id %}selected{% endif %}>
+                {{ path.title }}
+            </option>
+        {% endfor %}
+    </select>
 </form>
 
 <!-- Pie Chart -->
