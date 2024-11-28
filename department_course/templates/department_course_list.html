@@ -27,10 +27,10 @@
                             {% endif %}
                         </div>
                         <div class="p-2">
-                            {{ course.course_name }}
-                            <button onclick="showAssessments({{ course.id }}, this)" class="btn btn-link p-0">Assessments</button>
-                            <ul class="assessment-dropdown" style="display: none;"></ul>
+                            <span class="course-name" data-full-name="{{ course.course_name }}" title="{{ course.course_name }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px;">{{ course.course_name }}</span>
                         </div>
+                        <button onclick="showAssessments({{ course.id }}, this)" class="btn btn-link p-0">Assessments</button>
+                        <ul class="assessment-dropdown" style="display: none;"></ul>
                     </div>
                 </div>
             {% empty %}
@@ -47,16 +47,29 @@
                 <li class="{% if forloop.counter > 5 %}d-none extra-department{% endif %}">
                     <a href="#" class="department-name" data-department-id="{{ department.id }}">{{ department.name }}</a>
                     <ul class="course-list-{{ department.id }} mt-2" style="display: none;" ondrop="drop(event)" ondragover="allowDrop(event)">
-                        {% for course in department.courses.all %}
-                            <li>
-                                {{ course.course_name }}
-                                <button onclick="showAssessments({{ course.id }}, this)" class="btn btn-link p-0">Show Assessments</button>
-                                <ul class="assessment-dropdown" style="display: none;"></ul>
-                                <button class="btn btn-sm btn-outline-danger remove-course" data-course-id="{{ course.id }}" onclick="removeCourse(event)">Remove</button>
-                            </li>
-                        {% empty %}
-                            <li>No courses found for this department.</li>
-                        {% endfor %}
+                        <div class="row row-cols-3 g-1">
+                            {% for course in department.courses.all %}
+                                <div class="col mb-1">
+                                    <div class="card shadow-sm border-light course-item" data-course-id="{{ course.id }}" draggable="true">
+                                        <div class="ratio ratio-4x3" style="max-width: 200px;">
+                                            {% if course.image %}
+                                                <img src="{{ course.image.url }}" class="card-img-top" alt="{{ course.course_name }}" style="object-fit: cover;">
+                                            {% else %}
+                                                <img src="{% static 'course/images/chotbg.png' %}" alt="Default Image" class="course-image" style="object-fit: cover;">
+                                            {% endif %}
+                                        </div>
+                                        <div class="p-2">
+                                            <span class="course-name" data-full-name="{{ course.course_name }}" title="{{ course.course_name }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px;">{{ course.course_name }}</span>
+                                        </div>
+                                        <button onclick="showAssessments({{ course.id }}, this)" class="btn btn-link p-0">Show Assessments</button>
+                                        <ul class="assessment-dropdown" style="display: none;"></ul>
+                                        <button class="btn btn-sm btn-outline-danger remove-course" data-course-id="{{ course.id }}" onclick="removeCourse(event)">Remove</button>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <li>Add course here</li>
+                            {% endfor %}
+                        </div>
                     </ul>
                 </li>
             {% empty %}
@@ -65,8 +78,8 @@
         </ul>
         <button id="see-more-departments" class="btn btn-outline-secondary mt-4" onclick="showMoreDepartments()">See More</button>
     </div>
-
 </div>
+
 <script>
     let currentIndex = 0; // Chỉ số hiện tại của khóa học được hiển thị
     const coursesPerPage = 6; // Số khóa học hiển thị mỗi lần
@@ -159,6 +172,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const courseName = event.dataTransfer.getData('text/plain');
         const courseId = event.dataTransfer.getData('courseId');
 
+
+        // Kiểm tra nếu thông báo "No courses found" tồn tại
+        const courseList = event.target.closest('ul');
+        const noCoursesMessage = courseList.querySelector('li');
+        if (noCoursesMessage && noCoursesMessage.textContent.trim() === 'No courses found for this department.') {
+            noCoursesMessage.remove(); // Xóa thông báo
+        }
+
         // Create a new list item for the course in the department's course list
         const newCourseItem = document.createElement('li');
         newCourseItem.textContent = courseName;
@@ -218,16 +239,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function removeCourse(event) {
-        const courseId = event.target.dataset.courseId; // Get the course ID from the remove button
-        const departmentId = event.target.closest('ul').className.match(/course-list-(\d+)/)[1]; // Get department ID
+        const courseId = event.target.dataset.courseId; // Lấy ID khóa học từ nút xóa
+        const departmentId = event.target.closest('ul').className.match(/course-list-(\d+)/)[1]; // Lấy ID department
 
-        // Remove the specific course from the department list
-        const courseItem = event.target.closest('li');
+        // Xóa khóa học khỏi danh sách department
+        const courseItem = event.target.closest('.course-item');
         if (courseItem) {
-            courseItem.remove(); // Remove the course item from the department's list
+            courseItem.remove(); // Xóa khóa học khỏi danh sách department
         }
 
-        // Send an AJAX request to remove the course from the department
+        // Gửi yêu cầu AJAX để xóa khóa học khỏi department
         fetch("{% url 'department_course:remove_course_from_department' %}", {
             method: 'POST',
             headers: {
@@ -242,15 +263,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // After successful removal, we need to restore the course to the "Available Courses" list
+                // Khôi phục khóa học vào danh sách "Available Courses"
+                const availableCoursesList = document.getElementById('all-courses'); // Lấy phần danh sách khóa học có sẵn
 
-                const availableCoursesList = document.getElementById('all-courses'); // Get the available courses section
-
-                // Check if the course item is already in the available list
+                // Kiểm tra xem khóa học đã có trong danh sách có sẵn chưa
                 let existingCourseItem = availableCoursesList.querySelector(`.course-item[data-course-id="${courseId}"]`);
                 
                 if (!existingCourseItem) {
-                    // If the course doesn't exist in the available list, create a new course item
+                    // Nếu khóa học chưa có trong danh sách có sẵn, tạo một mục khóa học mới
                     const newCourseItem = document.createElement('div');
                     newCourseItem.classList.add('col', 'mb-1');
                     newCourseItem.innerHTML = `
@@ -259,26 +279,19 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <img src="${data.course_image_url || "{% static 'course/images/chotbg.png' %}"}" alt="${data.course_name}" class="course-image" style="object-fit: cover;">
                             </div>
                             <div class="p-2">
-                                ${data.course_name}
+                                <span class="course-name" data-full-name="${data.course_name}" title="${data.course_name}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px;">${data.course_name}</span>
                                 <button onclick="showAssessments(${courseId}, this)" class="btn btn-link p-0">Assessments</button>
                                 <ul class="assessment-dropdown" style="display: none;"></ul>
                             </div>
                         </div>
                     `;
 
-                    // Add dragstart event to the new course item
-                    const draggableCourse = newCourseItem.querySelector('.course-item');
-                    draggableCourse.addEventListener('dragstart', event => {
-                        event.dataTransfer.setData('text/plain', data.course_name);
-                        event.dataTransfer.setData('courseId', courseId);
-                    });
-
-                    // Append the course item back to the "Available Courses" section
+                    // Thêm mục khóa học mới vào danh sách "Available Courses"
                     availableCoursesList.appendChild(newCourseItem);
                 } else {
-                    // If the course already exists, ensure it is visible and not hidden
+                    // Nếu khóa học đã tồn tại, đảm bảo nó hiển thị và không bị ẩn
                     existingCourseItem.style.display = 'block';
-                    existingCourseItem.removeAttribute('data-moved'); // Remove the 'data-moved' attribute
+                    existingCourseItem.removeAttribute('data-moved'); // Xóa thuộc tính 'data-moved'
                 }
             } else {
                 alert('An error occurred while removing the course.');
@@ -334,6 +347,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return cookieValue;
     }
+
+    // Modify drag and drop event handlers to include page reload
+    document.querySelectorAll('.course-item').forEach(item => {
+        item.addEventListener('dragend', reloadPage); // Reload after dragging
+    });
+
+    // Modify the remove course button event handler to reload the page after course removal
+    document.querySelectorAll('.remove-course').forEach(button => {
+        button.addEventListener('click', () => {
+            setTimeout(reloadPage, 1000); // Delay reload to allow AJAX to complete
+        });
+    });
 
     function addCourseToDepartment(courseId, departmentId) {
         // Gửi yêu cầu AJAX để thêm khóa học vào department
