@@ -3,6 +3,7 @@ from course.models import Course, Enrollment, Session, Completion, Tag, CourseMa
 from django.db.models import Count, F, Q, Sum, Avg
 from module_group.models import ModuleGroup
 from user.models import User, Student, Profile
+from department.models import Department
 from collections import Counter
 from django.http import JsonResponse
 from activity.models import UserActivityLog
@@ -566,7 +567,7 @@ def price_report(request):
             'savings': discount_amount
         })
     
-    # Prepare grouped column chart data, So sánh giá gốc và giá sau chiết khấu cho từng khóa học.
+    # Prepare grouped column chart data, So sánh giá gc và giá sau chiết khấu cho từng khóa học.
     group_chart_data = {
         'labels': [item['course'] for item in discount_analysis],
         'original_prices': [item['original_price'] for item in discount_analysis],
@@ -584,3 +585,121 @@ def price_report(request):
     }
     
     return render(request, 'reports/price_report.html', context)
+
+def department_report(request):
+    """Generate comprehensive department analysis report"""
+    
+    # 1. Average number of courses per department
+    departments = Department.objects.all()
+    dept_course_data = {
+        'labels': [],
+        'course_counts': []
+    }
+    
+    for dept in departments:
+        dept_course_data['labels'].append(dept.name)
+        dept_course_data['course_counts'].append(dept.courses.count())
+
+    # Calculate average
+    total_courses = sum(dept_course_data['course_counts'])
+    avg_courses = total_courses / len(departments) if departments else 0
+    
+    # 2. Topic distribution across departments
+    topic_distribution = {}
+    for dept in departments:
+        dept_topics = set()  # Use set to avoid duplicate topics
+        for course in dept.courses.all():
+            for tag in course.tags.all():
+                dept_topics.add(tag.topic.name)
+        
+        topic_distribution[dept.name] = list(dept_topics)
+    
+    # Convert to chart data
+    topic_chart_data = {
+        'labels': list(topic_distribution.keys()),  # Department names
+        'datasets': []
+    }
+    
+    # Get unique topics
+    all_topics = set()
+    for topics in topic_distribution.values():
+        all_topics.update(topics)
+    
+    # Create dataset for each topic
+    for topic in all_topics:
+        dataset = {
+            'label': topic,
+            'data': []
+        }
+        for dept in topic_distribution:
+            dataset['data'].append(1 if topic in topic_distribution[dept] else 0)
+        topic_chart_data['datasets'].append(dataset)
+
+    # 3. Enrollment percentage by department
+    enrollment_data = {
+        'labels': [],
+        'percentages': []
+    }
+    
+    for dept in departments:
+        total_users = dept.users.count()
+        if total_users > 0:
+            enrolled_users = 0
+            for course in dept.courses.all():
+                enrolled_users += course.enrollments.filter(
+                    student__in=dept.users.all()
+                ).distinct().count()
+            
+            enrollment_percentage = (enrolled_users / total_users) * 100
+            
+            enrollment_data['labels'].append(dept.name)
+            enrollment_data['percentages'].append(round(enrollment_percentage, 2))
+    
+    location_course_data = {
+        'labels': [],  # Department names
+        'datasets': {}  # Will hold data for each location
+    }
+    
+    # Get all unique locations
+    locations = set()
+    for dept in departments:
+        if dept.location:  # Make sure location exists
+            # Convert Location object to string using its string representation
+            location_str = str(dept.location)
+            locations.add(location_str)
+            location_course_data['labels'].append(dept.name)
+    
+    # Initialize datasets for each location
+    for location in locations:
+        location_course_data['datasets'][location] = []
+    
+    # Fill in the data
+    for dept in departments:
+        # Convert location to string for comparison
+        dept_location = str(dept.location) if dept.location else None
+        for location in locations:
+            if dept_location == location:
+                location_course_data['datasets'][location].append(dept.courses.count())
+            else:
+                location_course_data['datasets'][location].append(0)
+    
+    # Convert to format expected by Chart.js
+    location_datasets = []
+    for location, data in location_course_data['datasets'].items():
+        location_datasets.append({
+            'label': location,
+            'data': data
+        })
+
+    context = {
+        'dept_course_data': json.dumps(dept_course_data),
+        'topic_chart_data': json.dumps(topic_chart_data),
+        'enrollment_data': json.dumps(enrollment_data),
+        'avg_courses': round(avg_courses, 2),
+        'location_course_data': json.dumps({
+            'labels': location_course_data['labels'],
+            'datasets': location_datasets
+        })
+    }
+    
+    return render(request, 'reports/department_report.html', context)

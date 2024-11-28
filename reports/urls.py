@@ -30,4 +30,6 @@ urlpatterns = [
 
     path('price-report/', views.price_report, name='price_report'),
 
+    path('department-report/', views.department_report, name='department_report'),
+
 ]
