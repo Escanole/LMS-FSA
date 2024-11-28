@@ -1250,20 +1250,24 @@ def topic_delete(request, pk):
 
 def tag_add(request):
     if request.method == 'POST':
-        form = TagForm(request.POST or None)
+        # Lấy danh sách tag_names từ form và topic_id duy nhất
+        tag_names = request.POST.getlist('tags[]')  # Lấy tất cả giá trị tags[]
+        topic_ids = request.POST.getlist('topics[]')  # Lấy tất cả giá trị topics[] (chỉ có một topic)
 
-        tag_names = request.POST.getlist('tags[]')
-        topic_ids = request.POST.getlist('topics[]')  # Lấy danh sách topic_id từ form
-
-        if tag_names and topic_ids:
-            for name, topic_id in zip(tag_names, topic_ids):
-                if name.strip() and topic_id:
-                    # Tạo Tag mới với cả name và topic_id
-                    Tag.objects.create(name=name.strip(), topic_id=topic_id)
-            messages.success(request, 'Tags added successfully.')
-            return redirect('course:topic_tag_list')
+        # Kiểm tra xem topic_ids có giá trị hay không
+        if topic_ids:
+            topic_id = topic_ids[0]  # Lấy ID topic đầu tiên, vì chỉ có một topic được chọn
+            if tag_names:
+                for name in tag_names:
+                    if name.strip():  # Nếu tag name không rỗng
+                        # Tạo tag mới gắn với topic_id đã chọn
+                        Tag.objects.create(name=name.strip(), topic_id=topic_id)
+                messages.success(request, 'Tags added successfully.')
+                return redirect('course:topic_tag_list')
+            else:
+                messages.error(request, 'Please enter at least one tag name.')
         else:
-            messages.error(request, 'Please enter at least one tag name and select a topic for each tag.')
+            messages.error(request, 'Please select a topic for the tags.')
 
     else:
         form = TagForm()
