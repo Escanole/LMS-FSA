@@ -441,6 +441,24 @@ def course_edit_detail(request, pk):
         'first_session_id': first_session_id,
     })
 
+def apply_discount(request):
+    if request.method == 'POST':
+        selected_courses = request.POST.getlist("selected_courses[]")
+        discount = request.POST.get("discount")
+        
+        # Xử lý logic lưu giảm giá tại đây
+        # Ví dụ: gán discount cho mỗi khóa học
+        for course_id in selected_courses:
+            course = Course.objects.get(id=course_id)
+            course.discount = discount
+            course.save()
+
+        return redirect('course:apply_discount')  # Tên URL của view này
+
+    # Lấy tất cả các khóa học để hiển thị trong danh sách
+    all_courses = Course.objects.all()
+    return render(request, 'course/apply_discount.html', {'all_courses': all_courses})
+
 def course_edit_session(request, pk):
     course = get_object_or_404(Course, pk=pk)
     sessions = Session.objects.filter(course=course).order_by('order')
@@ -1232,20 +1250,24 @@ def topic_delete(request, pk):
 
 def tag_add(request):
     if request.method == 'POST':
-        form = TagForm(request.POST or None)
+        # Lấy danh sách tag_names từ form và topic_id duy nhất
+        tag_names = request.POST.getlist('tags[]')  # Lấy tất cả giá trị tags[]
+        topic_ids = request.POST.getlist('topics[]')  # Lấy tất cả giá trị topics[] (chỉ có một topic)
 
-        tag_names = request.POST.getlist('tags[]')
-        topic_ids = request.POST.getlist('topics[]')  # Lấy danh sách topic_id từ form
-
-        if tag_names and topic_ids:
-            for name, topic_id in zip(tag_names, topic_ids):
-                if name.strip() and topic_id:
-                    # Tạo Tag mới với cả name và topic_id
-                    Tag.objects.create(name=name.strip(), topic_id=topic_id)
-            messages.success(request, 'Tags added successfully.')
-            return redirect('course:topic_tag_list')
+        # Kiểm tra xem topic_ids có giá trị hay không
+        if topic_ids:
+            topic_id = topic_ids[0]  # Lấy ID topic đầu tiên, vì chỉ có một topic được chọn
+            if tag_names:
+                for name in tag_names:
+                    if name.strip():  # Nếu tag name không rỗng
+                        # Tạo tag mới gắn với topic_id đã chọn
+                        Tag.objects.create(name=name.strip(), topic_id=topic_id)
+                messages.success(request, 'Tags added successfully.')
+                return redirect('course:topic_tag_list')
+            else:
+                messages.error(request, 'Please enter at least one tag name.')
         else:
-            messages.error(request, 'Please enter at least one tag name and select a topic for each tag.')
+            messages.error(request, 'Please select a topic for the tags.')
 
     else:
         form = TagForm()
@@ -1256,6 +1278,7 @@ def tag_add(request):
         'title': 'Add Tags',
         'topics': topics,
     })
+
 
 
 def tag_edit(request, pk):
