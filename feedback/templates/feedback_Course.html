@@ -23,8 +23,7 @@
                     {{ form.course_material|add_class:"d-none" }}
                 </div>
 
-
-                <div class="mb-4 rating-container" style="display: flex; align-items: center; gap: 0.625rem;" >
+                <div class="mb-4 rating-container" style="display: flex; align-items: center; gap: 0.625rem;">
                     <label for="practicalApplications" class="form-label fw-bold" style="color:#2b59c3">Practical Applications</label>
                     <div class="star-rating" style="display: flex; font-size: 1.5rem;" id="practicalApplications">
                         {% for i in "12345" %}
@@ -64,10 +63,30 @@
                     {{ form.support_materials|add_class:"d-none" }}
                 </div>
 
-                <!-- Comments -->
-                <div class="form-group mb-4">
-                    <label for="comments" class="form-label fw-bold" style="color:#2b59c3">Comments</label>
-                    {{ form.comments|add_class:"form-control rounded-md" }}
+                <!-- Tabs for Comments -->
+                <div class="mb-4">
+                    <ul class="nav nav-pills mb-3" id="commentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="course-tab" data-bs-toggle="pill" href="#course-comment" role="tab" aria-controls="course-comment" aria-selected="true">Course Comment</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="material-tab" data-bs-toggle="pill" href="#material-comment" role="tab" aria-controls="material-comment" aria-selected="false">Material Comment</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="commentTabsContent">
+                        <div class="tab-pane fade show active" id="course-comment" role="tabpanel" aria-labelledby="course-tab">
+                            <div class="form-group">
+                                <label for="courseComment" class="form-label fw-bold" style="color:#2b59c3">Course Comment</label>
+                                {{ form.course_comment|add_class:"form-control rounded-md" }}
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="material-comment" role="tabpanel" aria-labelledby="material-tab">
+                            <div class="form-group">
+                                <label for="materialComment" class="form-label fw-bold" style="color:#2b59c3">Material Comment</label>
+                                {{ form.material_comment|add_class:"form-control rounded-md" }}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="background-color: #2b59c3; border-color: #2b59c3;  float: right;">Submit Feedback</button>
@@ -75,6 +94,33 @@
         </div>
     </div>
 </div>
+
+{% comment %}
+    <style>
+        .rating-container {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+        }
+        .star-rating {
+            display: flex;
+            font-size: 1.5rem;
+        }
+        .star-rating .fa-star {
+            background-color: transparent;
+            display: inline-block;
+            cursor: pointer;
+            border: none;
+            outline: none;
+        }
+        .star-rating .fa-star.checked {
+            color: #ffc107;
+        }
+        .star-rating .fa-star.unchecked {
+            color: #e4e5e9;
+        }
+    </style>
+{% endcomment %}
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -107,16 +153,18 @@
                         }
                     });
                 });
+
                 star.addEventListener('dblclick', function() {
                     hiddenInput.value = 0;
                     stars.forEach(s => {
                         s.classList.remove('checked');
                         s.classList.add('unchecked');
                         s.style.color = '#e4e5e9';
-                    })
-                })
+                    });
+                });
             });
         });
     });
 </script>
+
 {% endblock %}

@@ -47,7 +47,8 @@
                         <tr>
                             <th>Course</th>
                             <th>Average Rating</th>
-                            <th>Comments</th>
+                            <th>Material Comments</th>
+                            <th>Course Comments</th>
                             <th>Date</th>
                             <th>Actions</th>
                         </tr>
@@ -57,7 +58,8 @@
                         <tr>
                             <td>{{ feedback.course.course_name }}</td>
                             <td>{{ feedback.average_rating }}</td>
-                            <td>{{ feedback.comments }}</td>
+                            <td>{{ feedback.material_comment }}</td>
+                            <td>{{ feedback.course_comment }}</td>
                             <td>{{ feedback.created_at }}</td>
                             <td>
                                 <a href="{% url 'feedback:course_feedback_detail' feedback.id %}" class="btn btn-info">View Details</a>

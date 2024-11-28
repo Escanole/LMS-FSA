@@ -129,13 +129,21 @@ def give_instructor_feedback(request, instructor_id, course_id):
 
 def give_course_feedback(request, course_id):
     course = get_object_or_404(Course, id=course_id)
+    
     if request.method == 'POST':
         form = CourseFeedbackForm(request.POST)
         if form.is_valid():
+            # Create a new CourseFeedback object
             feedback = form.save(commit=False)
             feedback.student = request.user
             feedback.course = course
+            
+            # Save both comments: course_comment and material_comment
+            feedback.course_comment = form.cleaned_data.get('course_comment')
+            feedback.material_comment = form.cleaned_data.get('material_comment')
+
             feedback.save()
+
             messages.success(request, 'Your feedback has been submitted successfully.')
             return redirect('course:course_detail', pk=course.id)
         else:
@@ -151,7 +159,6 @@ def give_course_feedback(request, course_id):
         'course': course,
         'latest_feedbacks': latest_feedbacks
     })
-
 def give_training_program_feedback(request, training_program_id):
     training_program = TrainingProgram.objects.get(pk=training_program_id)
     if request.method == 'POST':

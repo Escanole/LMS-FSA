@@ -17,7 +17,11 @@ class InstructorFeedbackForm(forms.ModelForm):
 class CourseFeedbackForm(forms.ModelForm):
     class Meta:
         model = CourseFeedback
-        fields = ['course_material', 'clarity_of_explanation', 'course_structure', 'practical_applications', 'support_materials', 'comments']
+        fields = [
+            'course_material', 'clarity_of_explanation', 'course_structure', 
+            'practical_applications', 'support_materials',
+            'course_comment', 'material_comment'
+        ]
         widgets = {
             'course_material': forms.HiddenInput(),
             'clarity_of_explanation': forms.HiddenInput(),

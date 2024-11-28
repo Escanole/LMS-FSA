@@ -38,9 +38,14 @@ class CourseFeedback(models.Model):
     def average_rating(self):
         return (self.course_material + self.clarity_of_explanation +
                 self.course_structure + self.practical_applications + self.support_materials) / 5.0
+    
+    course_comment = models.TextField(blank=True, null=True)
+    material_comment = models.TextField(blank=True, null=True)
 
-    comments = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for {self.course.course_name} by {self.student.username}"
 
 class TrainingProgramFeedback(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

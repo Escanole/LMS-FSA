@@ -38,7 +38,8 @@
     {% endif %}
 
     <p><strong>Average Rating:</strong> {{ feedback.average_rating }}</p>
-    <p><strong>Comments:</strong> {{ feedback.comments }}</p>
+    <p><strong>Material Comment:</strong> {{ feedback.material_comment }}</p>
+    <p><strong>Course Comment:</strong> {{ feedback.course_comment }}</p>
     <p><strong>Submitted on:</strong> {{ feedback.created_at }}</p>
 
     <a href="{% url 'feedback:feedback_list' %}" class="btn btn-secondary">Back to Feedback List</a>
