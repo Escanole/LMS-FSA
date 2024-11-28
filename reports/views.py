@@ -16,6 +16,7 @@ from django.http import Http404
 from collections import defaultdict
 import calendar
 import json
+from learning_path.models import LearningPath
 
 
 @login_required
@@ -428,8 +429,9 @@ def round_to_nearest_half(hour):
     return round(hour * 2) / 2
 
 def course_duration_report(request):
-    # Get the selected course from the GET parameters
+    # Get the selected course and learning path from the GET parameters
     selected_course_id = request.GET.get('course', None)
+    selected_learning_path_id = request.GET.get('learning_path', None)
 
     # Query to group durations by user and course
     user_course_durations = (
@@ -442,6 +444,14 @@ def course_duration_report(request):
     if selected_course_id:
         user_course_durations = user_course_durations.filter(
             material__session__course=selected_course_id
+        )
+
+    # Filter courses by selected learning path if provided
+    if selected_learning_path_id:
+        learning_path = LearningPath.objects.get(id=selected_learning_path_id)
+        courses_in_path = learning_path.steps.values_list('courses', flat=True)
+        user_course_durations = user_course_durations.filter(
+            material__session__course__in=courses_in_path
         )
 
     # Prepare data for rendering
@@ -494,6 +504,9 @@ def course_duration_report(request):
     # Get all courses for the filter dropdown
     all_courses_names = Course.objects.values('id', 'course_name')
 
+    # Get all learning paths for the filter dropdown
+    all_learning_paths = LearningPath.objects.all()
+
     return render(request, 'reports/course_duration_report.html', {
         'readable_durations_json': readable_durations_json,
         'readable_durations': readable_durations,
@@ -501,4 +514,6 @@ def course_duration_report(request):
         'selected_course_id': selected_course_id,
         'chart_labels': chart_labels,
         'chart_data': chart_data,
+        'all_learning_paths': all_learning_paths,
+        'selected_learning_path_id': selected_learning_path_id,
     })
