@@ -13,7 +13,8 @@
 
         <!-- Search Form -->
         <div class="row align-items-center mb-3">
-            <div class="col-md-8">
+            <!-- Search Bar -->
+            <div class="col-md-6">
                 <form method="GET" action="{% url 'course:course_search' %}" class="d-flex">
                     <input type="text" name="query" class="form-control me-2" placeholder="Search..." aria-label="Search">
                     <button type="submit" class="btn btn-primary">
@@ -21,15 +22,55 @@
                     </button>
                 </form>
             </div>
-            <div class="col-md-4 text-md-end mt-2 mt-md-0">
-                {% if is_instructor or user.is_superuser %}
-                    <a href="{% url 'course:course_add' %}" class="btn btn-primary">Add New Course</a>
-                {% endif %}
+
+            <!-- Buttons Section -->
+            <div class="col-md-6">
+                <div class="d-flex justify-content-evenly gap-2">
+                    <!-- Import Course Button -->
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#importCourseModal">
+                        Import Course
+                    </button>
+
+                    <!-- Import Modal -->
+                    <div class="modal fade" id="importCourseModal" tabindex="-1" aria-labelledby="importCourseModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="importCourseModalLabel">Import Courses</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <form id="importForm" enctype="multipart/form-data" method="POST">
+                                        {% csrf_token %}
+                                        <div class="mb-3">
+                                            <label for="course_folder" class="form-label">Choose Course Folder</label>
+                                            <input type="file" class="form-control" id="course_folder" name="course_folder" webkitdirectory directory multiple>
+                                        </div>
+                                        <div id="statusMessage"></div>
+                                    </form>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-primary" form="importForm">Import Courses</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Apply Discount Button -->
+                    {% if user.is_superuser %}
+                        <a href="{% url 'course:apply_discount' %}" class="btn btn-primary">Apply Discount</a>
+                    {% endif %}
+
+                    <!-- Add New Course Button -->
+                    {% if is_instructor or user.is_superuser %}
+                        <a href="{% url 'course:course_add' %}" class="btn btn-primary">Add New Course</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
-
     </div>
-    <div class="row">
+
+    <div class="row" style="max-height: 28rem; overflow-y: auto;">
         {% for course in page_obj %}
         <div class="col-md-4 mb-4">
             <div class="card shadow-sm border-light">
@@ -44,12 +85,16 @@
                     {% endif %}
                 </div>
 
-
-
                 <!-- Card Body -->
                 <div class="card-body">
                     <h5 class="card-title main-color-text">{{ course.course_name }}</h5>
-                    <p class="card-text text-muted">{{ course.description|truncatewords:20 }}</p>
+                    <p class="card-text text-muted">
+                        {% if course.description %}
+                            {{ course.description|truncatewords:20 }}
+                        {% else %}
+                            &nbsp; <!-- Non-breaking space -->
+                        {% endif %}
+                    </p>
                     <p class="card-text main-color-text"><strong>Price: </strong>
                         {% if course.discount > 0 %}
                             <span class="original-price" style='text-decoration: line-through;color: grey;'>{{ course.price }}$</span>
@@ -213,17 +258,79 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/js/all.min.js"></script>
 
 <script>
-$(document).ready(function(){
-    $('#feedbackCarousel').carousel({
-        interval: 3000
+    const form = document.getElementById('importForm');
+    const statusMessage = document.getElementById('statusMessage');
+
+    // Get the CSRF token from the Django template
+    const getCookie = (name) => {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    };
+
+    const csrfToken = getCookie('csrftoken');
+
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData();
+        const files = document.getElementById('course_folder').files;
+
+        if (files.length === 0) {
+            statusMessage.innerHTML = `<div class="alert alert-danger">Please select a folder to upload.</div>`;
+            return;
+        }
+
+        // Attach each file with its webkitRelativePath
+        Array.from(files).forEach(file => {
+            formData.append('course_folder', file); // File object
+            formData.append('relative_paths[]', file.webkitRelativePath); // Relative path
+        });
+
+        // Send the form data to the server with CSRF token in the headers
+        fetch("{% url 'course:import_courses' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': csrfToken // Include CSRF token here
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    statusMessage.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+                }
+                if (data.error) {
+                    statusMessage.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                }
+            })
+            .catch(error => {
+                statusMessage.innerHTML = `<div class="alert alert-danger">An error occurred.</div>`;
+            });
     });
 
-    // Enable carousel controls
-    $(".carousel-control-prev").click(function(){
-        $("#feedbackCarousel").carousel("prev");
-    });
-    $(".carousel-control-next").click(function(){
-        $("#feedbackCarousel").carousel("next");
+    $(document).ready(function () {
+        $('#feedbackCarousel').carousel({
+            interval: 3000
+        });
+
+        // Enable carousel controls
+        $(".carousel-control-prev").click(function () {
+            $("#feedbackCarousel").carousel("prev");
+        });
+        $(".carousel-control-next").click(function () {
+            $("#feedbackCarousel").carousel("next");
+        });
     });
 </script>
 {% endblock %}

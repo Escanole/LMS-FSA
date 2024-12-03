@@ -100,18 +100,12 @@ class Session(models.Model):
     def __str__(self):
         return self.name
 
-class Enrollment(models.Model):
-    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='enrollments')
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
-    date_enrolled = models.DateTimeField(auto_now_add=True)
-    date_unenrolled = models.DateTimeField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
 
-    class Meta:
-        unique_together = ('student', 'course')
+class AssessmentType(models.Model):
+    type = models.CharField(max_length=20, unique=True)
 
     def __str__(self):
-        return f"{self.student} enrolled in {self.course}"
+        return self.type
 
 class CourseMaterial(models.Model):
     MATERIAL_TYPE_CHOICES = [
@@ -140,6 +134,21 @@ class ReadingMaterial(models.Model):
 
     def __str__(self):
         return self.title
+
+class Enrollment(models.Model):
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='enrollments')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    date_enrolled = models.DateTimeField(auto_now_add=True)
+    date_unenrolled = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    come_back = models.PositiveIntegerField(default=0)
+    last_accessed_material = models.ForeignKey(CourseMaterial, null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        unique_together = ('student', 'course')
+
+    def __str__(self):
+        return f"{self.student} enrolled in {self.course}"
 
 class Completion(models.Model):
     session = models.ForeignKey(Session, on_delete=models.CASCADE)

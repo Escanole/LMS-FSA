@@ -9,21 +9,22 @@ from assessments.models import Assessment
 
 def department_course_list(request):
     search_query = request.GET.get('search', '')
-    
+
     # Filter departments based on search query
     if search_query:
         departments = Department.objects.filter(name__icontains=search_query)
     else:
         departments = Department.objects.all()
-    
+
     # Retrieve only unassigned courses for the available courses list
     courses = Course.objects.filter(department__isnull=True)
-    
+
     return render(request, 'department_course_list.html', {
         'departments': departments,
         'courses': courses,
         'search_query': search_query
     })
+
 
 @csrf_exempt
 def add_course_to_department(request):
@@ -45,13 +46,14 @@ def add_course_to_department(request):
             department.courses.add(course)
 
             return JsonResponse({'status': 'success', 'message': 'Course added successfully.'})
-        
+
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON data.'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
-    
+
     return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
 
 @csrf_exempt
 def remove_course_from_department(request):
@@ -59,7 +61,7 @@ def remove_course_from_department(request):
         data = json.loads(request.body)
         department_id = data.get('department_id')
         course_id = data.get('course_id')
-        
+
         try:
             course = get_object_or_404(Course, id=course_id)
             department = get_object_or_404(Department, id=department_id)
@@ -71,15 +73,16 @@ def remove_course_from_department(request):
             return JsonResponse({'status': 'success', 'course_name': course.course_name})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
-    
+
     return JsonResponse({'status': 'error', 'message': 'Invalid request'})
+
 
 @csrf_exempt
 def get_assessments_for_course(request, course_id):
     if request.method == 'GET':
         # Fetch the course object
         course = get_object_or_404(Course, id=course_id)
-        
+
         # Get all assessments related to this course
         assessments = Assessment.objects.filter(course=course)
 

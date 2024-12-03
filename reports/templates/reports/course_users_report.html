@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+{% include "menuReport.html" %}
+    <h1>Course Users Analysis Report</h1>
+
+    <form method="get">
+        <label for="courseFilter">Select Course:</label>
+        <select name="course" id="courseFilter" onchange="this.form.submit()">
+            <option value="">All Courses</option>
+            {% for course in all_courses %}
+                <option value="{{ course.id }}" {% if course.id == selected_course %}selected{% endif %}>
+                    {{ course.course_name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <label for="userFilter">Select User:</label>
+        <select name="user" id="userFilter" onchange="this.form.submit()">
+            <option value="">All Users</option>
+            {% for user in all_users %}
+                <option value="{{ user.id }}" {% if user.id == selected_user %}selected{% endif %}>
+                    {{ user.username }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <!-- Add Bootstrap table classes here -->
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Course</th>
+                <th>Most Recent Enrollment Date</th>
+                <th>Most Recent Unenrollment Date</th>
+                <th>Times Came Back</th>
+                <th>Total Time Spent (Hours)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in report_data %}
+                <tr>
+                    <td>{{ data.user }}</td>
+                    <td>{{ data.course }}</td>
+                    <td>{{ data.enrollment_date }}</td>
+                    <td>{{ data.unenrollment_date }}</td>
+                    <td>{{ data.come_back_count }}</td>
+                    <td>{{ data.total_time_spent }}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

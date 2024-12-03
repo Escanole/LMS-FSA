@@ -87,7 +87,7 @@
                     {% if completion_status %}Completed{% else %}Mark as Complete{% endif %}
                 </button>
                 {% if next_material or next_session %}
-                <a id="next-btn" href="{% if next_session %}{% url 'course:course_content' course.pk next_session.id %}{% else %}{% url 'course:course_content' course.pk current_session.id %}?file_id={{ next_material.id }}&file_type={{ next_material.material_type }}{% endif %}" class="btn btn-secondary" style="background-color: gray;">
+                <a id="next-btn" href="{% if next_session %}{% url 'course:course_content' course.pk next_session.id %}?file_id={{ next_material.id }}&file_type={{ next_material.material_type }}{% else %}{% url 'course:course_content' course.pk current_session.id %}?file_id={{ next_material.id }}&file_type={{ next_material.material_type }}{% endif %}" class="btn btn-secondary" style="background-color: gray;">
                     {% if next_session %}Next Session{% else %}Next Item{% endif %}
                 </a>
                 {% endif %}
@@ -120,6 +120,7 @@ $(document).ready(function() {
         return cookieValue;
     }
 
+
     // Function to save end time when navigating away from the page
     function saveEndTimeOnNavigation(materialId) {
         if (materialId) {
@@ -133,10 +134,23 @@ $(document).ready(function() {
         }
     }
 
+    function saveLastAccessedMaterial(materialId) {
+        var courseId = '{{ course.pk }}';  // Assuming you have the course ID in your template context
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '{% url "course:save_last_accessed_material" %}', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.setRequestHeader('X-CSRFToken', getCSRFToken());
+        xhr.send(JSON.stringify({
+            'material_id': materialId,
+            'course_id': courseId  // Include course_id in the request
+        }));
+    }
+
     // Handle navigation away (on link click)
     $(document).on('click', '.nav-link, .list-group-item a', function(e) {
         var materialId = '{{ current_material.id }}'; // Get current material id
         saveEndTimeOnNavigation(materialId); // Send end time on material navigation
+        saveLastAccessedMaterial(materialId);
     });
 
     // Handle page unload (when leaving or refreshing the page)
@@ -153,6 +167,7 @@ $(document).ready(function() {
             }));
         }
     });
+
 
     // Ensure the session tabs are visible
     // $('#session-tabs').show();

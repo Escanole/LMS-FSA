@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Apply Discount{% endblock %}
+
+{% block content %}
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+</head>
+<h2>Apply Discount</h2>
+<form method="POST" action="{% url 'course:apply_discount' %}">
+    {% csrf_token %}
+    <div class="row">
+        <!-- Select Courses -->
+        <div class="col-md-5">
+            <div class="form-group">
+                <label for="selected_courses">Select Courses</label>
+                <select id="selected_courses" name="selected_courses[]" class="form-select select2" multiple>
+                    <option value="all_courses" id="select_all">All Courses</option>
+                    {% for course in all_courses %}
+                        <option value="{{ course.id }}">{{ course.course_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Discount Field -->
+        <div class="col-md-3">
+            <div class="form-group">
+                <label for="discount">Discount (%)</label>
+                <input type="number" id="discount" name="discount" class="form-control" placeholder="Enter discount" required>
+            </div>
+        </div>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-primary">Apply Discount</button>
+    <a href="{% url 'course:course_list' %}" class="btn btn-secondary px-1rem py-0.5rem rounded ml-2">Back to Course List</a>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Thêm Select2 JS vào trang này -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#selected_courses').select2({
+            placeholder: "Select courses",
+            allowClear: true,
+            width: 'resolve'
+        });
+
+        $('#selected_courses').on('change', function() {
+            const selectedOptions = $(this).val(); // Lấy giá trị các mục được chọn
+            if (selectedOptions.includes('all_courses')) {
+                // Nếu chọn "All Courses", xóa các lựa chọn khác và chỉ giữ "All Courses"
+                $(this).val(['all_courses']).trigger('change');
+            } else if (selectedOptions.length === 0) {
+                // Nếu không chọn gì, giữ danh sách trống
+                $(this).val([]).trigger('change');
+            }
+        });
+    });
+</script>
+{% endblock %}

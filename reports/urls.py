@@ -18,6 +18,9 @@ urlpatterns = [
     path('user-progress/', views.user_progress_report, name='user_progress_report'),
     path('instructor-performance/', views.instructor_performance_report, name='instructor_performance_report'),
     path('course-duration/', views.course_duration_report, name='course_duration_report'),
+    path('price-report/', views.price_report, name='price_report'),
+    path('department-report/', views.department_report, name='department_report'),
+    path('course-users-report/', views.course_users_report, name='course_users_report'),
 
     path('user/user_overview_report/', views.user_overview_report, name='user_overview_report'),
     path('user/student-id-report/', views.student_id_report, name='student_id_report'),

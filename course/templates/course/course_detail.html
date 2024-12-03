@@ -51,21 +51,26 @@
                 </div>
 
                 <div class="col" style="background-color: #ffffff; border-right: 0.03125rem dashed #6eb2df; flex: 1; padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
-                    {% if is_enrolled and sessions %}
+                    {% if is_enrolled and last_accessed_session and last_accessed_material %}
                         <p class="session-count" style="color: #2b59c3; font-size: 1.625rem; font-weight: bold; margin-bottom: 0.3125rem;">
-                            <a href="{% url 'course:course_content' course.pk sessions.0.id %}" class="session-link" style="text-decoration: none; color: #2b59c3; cursor: pointer; transition: color 0.3s ease;">
+                            <a href="{% url 'course:course_content' course.pk last_accessed_session.id %}?file_id={{ last_accessed_material.id }}&file_type={{ last_accessed_material.material_type }}" class="session-link" style="text-decoration: none; color: #2b59c3; cursor: pointer; transition: color 0.3s ease;">
                                 <span>{{ session_count }} Sessions</span>
                                 <i class="fas fa-book" style="color: black; margin-left: 0.625rem;"></i>
                             </a>
                         </p>
                         <p class="course-info-text" style="color: #2b59c3; font-size: 1rem; margin-bottom: 0; text-align: left;">Let's explore the course!</p>
+                    {% elif is_enrolled and last_accessed_session %}
+                        <p class="session-count" style="color: #2b59c3; font-size: 1.625rem; font-weight: bold; margin-bottom: 0.3125rem;">
+                            <span>{{ session_count }} Sessions</span>
+                            <i class="fas fa-book" style="color: black; margin-left: 0.625rem;"></i>
+                        </p>
+                        <p class="course-info-text" style="color: #2b59c3; font-size: 1rem; margin-bottom: 0; text-align: left;">No materials available</p>
                     {% else %}
                         <p class="session-count" style="color: #2b59c3; font-size: 1.625rem; font-weight: bold; margin-bottom: 0.3125rem;">
                             <span>{{ session_count }} Sessions</span>
                             <i class="fas fa-book" style="color: black; margin-left: 0.625rem;"></i>
                         </p>
-                        {% if not is_enrolled %}
-                        {% else %}
+                        {% if not last_accessed_session %}
                             <p class="course-info-text" style="color: #2b59c3; font-size: 1rem; margin-bottom: 0; text-align: left;">No sessions available</p>
                         {% endif %}
                     {% endif %}
@@ -89,10 +94,10 @@
 
                 <div class="col" style="background-color: #ffffff; flex: 1; padding: 1.25rem; display: flex; flex-direction: column; justify-content: center;">
                     {% if can_enroll %}
-                        {% if is_enrolled and sessions %}
-                            <a href="{% url 'course:course_unenroll' course.pk %}" class="unenroll-link" style="color: #dc3545; font-size: 1.875rem; cursor: pointer; position: relative; text-align: center;" title="Careful! You will lose all your progress!">Unenroll</a>
-                        {% elif is_enrolled %}
+                        {% if not last_accessed_session %}
                             <p style="text-align: left;">No sessions</p>
+                        {% elif is_enrolled and last_accessed_session %}
+                            <a href="{% url 'course:course_unenroll' course.pk %}" class="unenroll-link" style="color: #dc3545; font-size: 1.875rem; cursor: pointer; position: relative; text-align: center;" title="Careful! You will lose all your progress!">Unenroll</a>
                         {% else %}
                             <a href="{% url 'course:course_enroll' course.pk %}" class="enroll-link" style="font-size: 1.875rem; color: #2b59c3; cursor: pointer; position: relative; text-align: center;" title="Please review the prerequisite course!">Enroll</a>
                         {% endif %}
@@ -142,7 +147,13 @@
                     </tr>
                     <tr>
                         <th>Instructor</th>
-                        <td class="text-left">{{ course.instructor.get_full_name }} {{ course.instructor.username }}</td>
+                        <td class="text-left">{{ course.instructor.get_full_name }} {{ course.instructor.username }}
+                        {% if course.instructor %}
+                        <a href="{% url 'feedback:give_instructor_feedback' course.pk course.instructor.pk %}" class="text-primary" style='margin-left: 0.1875rem;'>
+                            Give A Feedback
+                        </a>
+                        {% endif %}
+                        </td>
                     </tr>
                     <tr>
                         <th>Average Rating</th>
@@ -256,6 +267,7 @@
             {% if user_type == 'instructor' or user.is_superuser %}
                 <div class="content-wrapper" style="max-width: 75rem; margin: 0 auto; padding: 0 1.25rem;">
                     {% if user_progress %}
+                    <div style="max-height: 25rem; overflow-y: auto;">
                         <table class="table" style="width: 100%; table-layout: fixed; border-collapse: collapse; border: 0.0625rem solid #ccc;">
                             <thead>
                                 <tr>
@@ -280,6 +292,7 @@
                     {% else %}
                         <p>No users have enrolled in this course yet.</p>
                     {% endif %}
+                    </div>
                 </div>
             {% elif user_type == 'student' %}
                 <!-- Prerequisite Map -->
@@ -304,12 +317,20 @@
                         <tr>
                             <th style="background-color: #2b59c3; color: white; padding: 0.5rem;">Full Name</th>
                             <th style="background-color: #2b59c3; color: white; padding: 0.5rem;">Email</th>
+                            <th style="background-color: #2b59c3; color: white; padding: 0.5rem;">Feedback</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td style="border: 0.0625rem solid #ddd; padding: 0.5rem; text-align: left;">{{ instructor.username }}</td>
                             <td style="border: 0.0625rem solid #ddd; padding: 0.5rem; text-align: left;">{{ instructor.email }}</td>
+                            <td style="border: 0.0625rem solid #ddd; padding: 0.5rem; text-align: left;">
+                                {% if course.instructor %}
+                                <a href="{% url 'feedback:give_instructor_feedback' course.pk course.instructor.pk %}" class="text-primary" style='margin-left: 0.1875rem;'>
+                                    Give A Feedback
+                                </a>
+                                {% endif %}
+                            </td>
                         </tr>
                     </tbody>
                 </table>

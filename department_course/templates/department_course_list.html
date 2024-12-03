@@ -27,10 +27,10 @@
                             {% endif %}
                         </div>
                         <div class="p-2">
-                            {{ course.course_name }}
-                            <button onclick="showAssessments({{ course.id }}, this)" class="btn btn-link p-0">Assessments</button>
-                            <ul class="assessment-dropdown" style="display: none;"></ul>
+                            <span class="course-name" data-full-name="{{ course.course_name }}" title="{{ course.course_name }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px;">{{ course.course_name }}</span>
                         </div>
+                        <button onclick="showAssessmentsPopup({{ course.id }}, this)" class="btn btn-link p-0" style="text-align: left; white-space: nowrap;">Assessments</button>
+                        <ul class="assessment-dropdown" style="display: none;"></ul>
                     </div>
                 </div>
             {% empty %}
@@ -47,16 +47,29 @@
                 <li class="{% if forloop.counter > 5 %}d-none extra-department{% endif %}">
                     <a href="#" class="department-name" data-department-id="{{ department.id }}">{{ department.name }}</a>
                     <ul class="course-list-{{ department.id }} mt-2" style="display: none;" ondrop="drop(event)" ondragover="allowDrop(event)">
-                        {% for course in department.courses.all %}
-                            <li>
-                                {{ course.course_name }}
-                                <button onclick="showAssessments({{ course.id }}, this)" class="btn btn-link p-0">Show Assessments</button>
-                                <ul class="assessment-dropdown" style="display: none;"></ul>
-                                <button class="btn btn-sm btn-outline-danger remove-course" data-course-id="{{ course.id }}" onclick="removeCourse(event)">Remove</button>
-                            </li>
-                        {% empty %}
-                            <li>No courses found for this department.</li>
-                        {% endfor %}
+                        <div class="row row-cols-3 g-1">
+                            {% for course in department.courses.all %}
+                                <div class="col mb-1">
+                                    <div class="card shadow-sm border-light course-item" data-course-id="{{ course.id }}" draggable="true">
+                                        <div class="ratio ratio-4x3" style="max-width: 200px;">
+                                            {% if course.image %}
+                                                <img src="{{ course.image.url }}" class="card-img-top" alt="{{ course.course_name }}" style="object-fit: cover;">
+                                            {% else %}
+                                                <img src="{% static 'course/images/chotbg.png' %}" alt="Default Image" class="course-image" style="object-fit: cover;">
+                                            {% endif %}
+                                        </div>
+                                        <div class="p-2">
+                                            <span class="course-name" data-full-name="{{ course.course_name }}" title="{{ course.course_name }}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px;">{{ course.course_name }}</span>
+                                        </div>
+                                        <button onclick="showAssessmentsPopup({{ course.id }}, this)" class="btn btn-link p-0" style="text-align: left; white-space: nowrap;">Assessments</button>
+                                        <ul class="assessment-dropdown" style="display: none;"></ul>
+                                        <button class="btn btn-sm btn-outline-danger remove-course" data-course-id="{{ course.id }}" onclick="removeCourse(event)">Remove</button>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <li>Add course here</li>
+                            {% endfor %}
+                        </div>
                     </ul>
                 </li>
             {% empty %}
@@ -65,8 +78,8 @@
         </ul>
         <button id="see-more-departments" class="btn btn-outline-secondary mt-4" onclick="showMoreDepartments()">See More</button>
     </div>
-
 </div>
+
 <script>
     let currentIndex = 0; // Chỉ số hiện tại của khóa học được hiển thị
     const coursesPerPage = 6; // Số khóa học hiển thị mỗi lần
@@ -90,10 +103,39 @@
         }
     }
 
-// Gọi hàm để hiển thị khóa học đầu tiên khi trang được tải
-document.addEventListener('DOMContentLoaded', function() {
-    showCourses(); // Hiển thị khóa học đầu tiên
+document.addEventListener('DOMContentLoaded', function () {
+    showCourses(); // Display the first set of courses
+
+    // Retrieve opened departments from localStorage
+    const openedDepartments = JSON.parse(localStorage.getItem('openedDepartments')) || [];
+
+    // Reopen the saved departments
+    openedDepartments.forEach(departmentId => {
+        const department = document.querySelector(`.department-name[data-department-id="${departmentId}"]`);
+        if (department) {
+            department.click(); // Trigger the click to open the department
+        }
+    });
+
+    // Clear the opened departments from localStorage after processing
+    localStorage.removeItem('openedDepartments');
 });
+
+function saveOpenDepartments() {
+    const openDepartments = [];
+    document.querySelectorAll('[class^="course-list-"]').forEach(courseList => {
+        // Use getComputedStyle to check visibility
+        if (window.getComputedStyle(courseList).display === 'block') {
+            const departmentIdMatch = courseList.className.match(/course-list-(\d+)/);
+            if (departmentIdMatch) {
+                openDepartments.push(departmentIdMatch[1]); // Extract department ID
+            }
+        }
+    });
+    localStorage.setItem('openedDepartments', JSON.stringify(openDepartments));
+    console.log('Saving opened departments:', openDepartments);
+}
+
     // Toggle department course lists when department name is clicked
     document.querySelectorAll('.department-name').forEach(item => {
         item.addEventListener('click', event => {
@@ -121,6 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     });
+
     function showMoreDepartments() {
         const extraDepartments = document.querySelectorAll('.extra-department');
         extraDepartments.forEach(department => department.classList.remove('d-none'));
@@ -158,6 +201,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const departmentId = event.target.closest('ul').className.match(/course-list-(\d+)/)[1];
         const courseName = event.dataTransfer.getData('text/plain');
         const courseId = event.dataTransfer.getData('courseId');
+
+
+        // Kiểm tra nếu thông báo "No courses found" tồn tại
+        const courseList = event.target.closest('ul');
+        const noCoursesMessage = courseList.querySelector('li');
+        if (noCoursesMessage && noCoursesMessage.textContent.trim() === 'No courses found for this department.') {
+            noCoursesMessage.remove(); // Xóa thông báo
+        }
 
         // Create a new list item for the course in the department's course list
         const newCourseItem = document.createElement('li');
@@ -215,19 +266,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 course_id: courseId
             })
         });
+        saveOpenDepartments();
+        location.reload();
     }
 
     function removeCourse(event) {
-        const courseId = event.target.dataset.courseId; // Get the course ID from the remove button
-        const departmentId = event.target.closest('ul').className.match(/course-list-(\d+)/)[1]; // Get department ID
+        const courseId = event.target.dataset.courseId; // Lấy ID khóa học từ nút xóa
+        const departmentId = event.target.closest('ul').className.match(/course-list-(\d+)/)[1]; // Lấy ID department
 
-        // Remove the specific course from the department list
-        const courseItem = event.target.closest('li');
+        // Xóa khóa học khỏi danh sách department
+        const courseItem = event.target.closest('.course-item');
         if (courseItem) {
-            courseItem.remove(); // Remove the course item from the department's list
+            courseItem.remove(); // Xóa khóa học khỏi danh sách department
         }
 
-        // Send an AJAX request to remove the course from the department
+        // Gửi yêu cầu AJAX để xóa khóa học khỏi department
         fetch("{% url 'department_course:remove_course_from_department' %}", {
             method: 'POST',
             headers: {
@@ -242,15 +295,14 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                // After successful removal, we need to restore the course to the "Available Courses" list
+                // Khôi phục khóa học vào danh sách "Available Courses"
+                const availableCoursesList = document.getElementById('all-courses'); // Lấy phần danh sách khóa học có sẵn
 
-                const availableCoursesList = document.getElementById('all-courses'); // Get the available courses section
-
-                // Check if the course item is already in the available list
+                // Kiểm tra xem khóa học đã có trong danh sách có sẵn chưa
                 let existingCourseItem = availableCoursesList.querySelector(`.course-item[data-course-id="${courseId}"]`);
-                
+
                 if (!existingCourseItem) {
-                    // If the course doesn't exist in the available list, create a new course item
+                    // Nếu khóa học chưa có trong danh sách có sẵn, tạo một mục khóa học mới
                     const newCourseItem = document.createElement('div');
                     newCourseItem.classList.add('col', 'mb-1');
                     newCourseItem.innerHTML = `
@@ -259,27 +311,22 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <img src="${data.course_image_url || "{% static 'course/images/chotbg.png' %}"}" alt="${data.course_name}" class="course-image" style="object-fit: cover;">
                             </div>
                             <div class="p-2">
-                                ${data.course_name}
-                                <button onclick="showAssessments(${courseId}, this)" class="btn btn-link p-0">Assessments</button>
+                                <span class="course-name" data-full-name="${data.course_name}" title="${data.course_name}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; max-width: 150px;">${data.course_name}</span>
+                                <button onclick="showAssessmentsPopup({{ course.id }}, this)" class="btn btn-link p-0" style="text-align: left; white-space: nowrap;">Assessments</button>
                                 <ul class="assessment-dropdown" style="display: none;"></ul>
                             </div>
                         </div>
                     `;
 
-                    // Add dragstart event to the new course item
-                    const draggableCourse = newCourseItem.querySelector('.course-item');
-                    draggableCourse.addEventListener('dragstart', event => {
-                        event.dataTransfer.setData('text/plain', data.course_name);
-                        event.dataTransfer.setData('courseId', courseId);
-                    });
-
-                    // Append the course item back to the "Available Courses" section
+                    // Thêm mục khóa học mới vào danh sách "Available Courses"
                     availableCoursesList.appendChild(newCourseItem);
                 } else {
-                    // If the course already exists, ensure it is visible and not hidden
+                    // Nếu khóa học đã tồn tại, đảm bảo nó hiển thị và không bị ẩn
                     existingCourseItem.style.display = 'block';
-                    existingCourseItem.removeAttribute('data-moved'); // Remove the 'data-moved' attribute
+                    existingCourseItem.removeAttribute('data-moved'); // Xóa thuộc tính 'data-moved'
                 }
+                saveOpenDepartments();
+                location.reload();
             } else {
                 alert('An error occurred while removing the course.');
             }
@@ -292,32 +339,72 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showAssessments(courseId, button) {
         const dropdown = button.nextElementSibling; // Get the dropdown for assessments
+        dropdown.style.display = 'none'; // Hide if already displayed
+        return; // Exit if already displayed
+    }
 
-        // Toggle dropdown visibility
-        if (dropdown.style.display === 'block') {
-            dropdown.style.display = 'none'; // Hide if already displayed
-            return; // Exit if already displayed
-        }
-
+    // New function to show assessments in a pop-up
+    function showAssessmentsPopup(courseId, button) {
         fetch(`/department_course/get-assessments/${courseId}/`)
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
                     const assessments = data.assessments;
-                    dropdown.innerHTML = ''; // Clear previous assessments
-
-                    // Populate the assessment dropdown
+                    let popupContent = '<ul>';
                     assessments.forEach(assessment => {
-                        const listItem = document.createElement('li');
-                        listItem.textContent = assessment.name;
-                        dropdown.appendChild(listItem);
+                        popupContent += `<li>${assessment.name}</li>`;
                     });
-
-                    // Show the dropdown
-                    dropdown.style.display = 'block';
+                    popupContent += '</ul>';
+                    showPopup('Assessments', popupContent); // Call function to show popup
                 }
-            })
+            });
     }
+
+    // Function to create and show a pop-up
+    function showPopup(title, content) {
+        const popup = document.createElement('div');
+        popup.className = 'popup'; // Add a class for styling
+        popup.innerHTML = `
+            <div class="popup-content">
+                <h2>${title}</h2>
+                <div>${content}</div>
+                <button onclick="closePopup()">Close</button>
+            </div>
+        `;
+        document.body.appendChild(popup);
+    }
+
+    // Function to close the pop-up
+    function closePopup() {
+        const popup = document.querySelector('.popup');
+        if (popup) {
+            popup.remove();
+        }
+    }
+
+    // Add CSS for the popup (you can adjust styles as needed)
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .popup-content {
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+    `;
+    document.head.appendChild(style);
 
     // Function to get CSRF token from cookies
     function getCookie(name) {
@@ -333,32 +420,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         return cookieValue;
-    }
-
-    function addCourseToDepartment(courseId, departmentId) {
-        // Gửi yêu cầu AJAX để thêm khóa học vào department
-        fetch("{% url 'department_course:add_course_to_department' %}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                department_id: departmentId,
-                course_id: courseId
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // Ẩn khóa học khỏi danh sách "Available Courses"
-                const availableCourseItem = document.querySelector(`.course-item[data-course-id="${courseId}"]`);
-                if (availableCourseItem) {
-                    availableCourseItem.style.display = 'none'; // Ẩn khóa học
-                    availableCourseItem.setAttribute('data-moved', 'true'); // Đánh dấu khóa học đã được chuyển
-                }
-            }
-        });
     }
 
 </script>

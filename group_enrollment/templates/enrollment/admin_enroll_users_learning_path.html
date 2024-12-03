@@ -21,7 +21,6 @@
         </div>
     {% endif %}
 
-    <!-- Group and Course Selection -->
     <div class="mb-4">
         <div class="row">
             <!-- Group Selection Column -->
@@ -38,41 +37,27 @@
                     </select>
                 </form>
             </div>
-            {% if selected_group_id %}
-            <!-- Course Selection Column -->
-            <div class="col-md-6">
-                <label for="courseSelect" class="form-label">Select Course:</label>
-                <form method="POST" id="courseForm">
-                    {% csrf_token %}
-                    <select class="form-select" id="courseSelect" name="course" required>
-                        <option value="">-- Select Course --</option>
-                        {% for course in courses %}
-                            <option value="{{ course.id }}">{{ course.course_name }}</option>
-                        {% endfor %}
-                    </select>
-                </form>
-            </div>
-            {%endif%}
         </div>
     </div>
 
-
-    {% if selected_group_id %}
-    <!-- Enrollment Form (combines course and user selection) -->
+    <!-- Group and Course Selection -->
     <form method="POST" id="enrollmentForm">
         {% csrf_token %}
 
-        <!-- Course Selection -->
-        <div class="mb-4">
-            <label for="courseSelect" class="form-label">Select Course:</label>
-            <select class="form-select" id="courseSelect" name="course" required>
-                <option value="">-- Select Course --</option>
-                {% for course in courses %}
-                    <option value="{{ course.id }}">{{ course.course_name }}</option>
+        {% if selected_group_id %}
+        <!-- Learning Path Selection -->
+        <div class="col-md-6">
+            <label for="pathSelect" class="form-label">Select Learning Path:</label>
+            <select class="form-select" id="pathSelect" name="learning_path" required>
+                <option value="">-- Select Learning Path --</option>
+                {% for path in learning_path %}
+                    <option value="{{ path.id }}">{{ path.title }}</option>
                 {% endfor %}
             </select>
         </div>
+        {% endif %}
 
+        {% if selected_group_id %}
         <!-- Users of Selected Group -->
         <div class="mt-4">
             <h3>Users in Selected Group</h3>
@@ -103,10 +88,9 @@
                 </tbody>
             </table>
             <button type="submit" class="btn btn-primary" id="enrollButton" disabled>Enroll Selected Users</button>
-
         </div>
+        {% endif %}
     </form>
-    {% endif %}
 </div>
 
 <script>
@@ -117,9 +101,8 @@ function toggleSelectAll(selectAllCheckbox) {
     });
 }
 
-// Enable the enroll button if a course is selected
 $(document).ready(function() {
-    $('#courseSelect').change(function() {
+    $('#pathSelect').change(function() {
         $('#enrollButton').prop('disabled', !$(this).val());
     });
 });

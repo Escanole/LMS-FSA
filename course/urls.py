@@ -6,6 +6,8 @@ from django.conf.urls.static import static
 app_name = 'course'
 urlpatterns = [
     path('', views.course_list, name='course_list'),
+    path('import-courses/', views.import_course_folder_view, name='import_courses'),
+    path('save_last_accessed_material/', views.save_last_accessed_material, name='save_last_accessed_material'),
     path('add/', views.course_add, name='course_add'),
     path('edit/<int:pk>/details/', views.course_edit_detail, name='course_edit_detail'),
     path('edit/<int:pk>/sessions/', views.course_edit_session, name='course_edit_session'),
@@ -36,4 +38,6 @@ urlpatterns = [
     path('tags/add/', views.tag_add, name='tag_add'),
     path('tags/edit/<int:pk>/', views.tag_edit, name='tag_edit'),
     path('tags/delete/<int:pk>/', views.tag_delete, name='tag_delete'),
+    # Discount
+    path('apply-discount/', views.apply_discount, name='apply_discount'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

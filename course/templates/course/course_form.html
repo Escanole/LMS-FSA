@@ -9,8 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
-<div class="container"
-    style="margin: 0 auto; padding: 2rem; background-color: white; border-radius: 0.3125rem; box-shadow: 0 0.625rem 0.9375rem rgba(0, 0, 0, 0.1), 0 0.25rem 0.375rem rgba(0, 0, 0, 0.05);">
+<div class="container" style="margin: 0 auto; padding: 2rem; background-color: white; border-radius: 0.3125rem; box-shadow: 0 0.625rem 0.9375rem rgba(0, 0, 0, 0.1), 0 0.25rem 0.375rem rgba(0, 0, 0, 0.05);">
     <h2 class="text-2xl font-semibold text-teal-600 mb-4 main-color-text" style="color: #072Ac8; text-transform: uppercase">{{ form.instance.pk|yesno:"Edit Course,Add New Course" }}</h2>
     <form method="post" class="space-y-4" enctype="multipart/form-data">
         {% csrf_token %}
@@ -58,8 +57,8 @@
                     </div>
                 </div>
             </div>
-            <div>
-                <h3 class="text-xl font-semibold mb-4" style="color: #072Ac8; margin-top:1rem">Course Details</h3>
+        </div>
+        <h3 class="text-xl font-semibold mb-4" style="color: #072Ac8; margin-top:1rem">Course Details</h3>
         <div class="form-group-inline" style="display: flex; gap: 1rem;">
             <!-- Prerequisite Course Selection -->
             <div style="flex: 1;">
