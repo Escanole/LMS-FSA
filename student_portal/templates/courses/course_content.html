@@ -3,32 +3,67 @@
 {% load static %}
 
 {% block title %}Course Content{% endblock %}
+
+</style>>
 {% block content %}
-<style>
-    #sidebar {
-        transition: width 0.3s;
-    }
 
-    .nav-link {
-        border-radius: 0.375rem;
-    }
-
-    .nav-link:hover {
-        background-color: rgba(255, 255, 255, 0.1); /* Lighten background on hover */
-        transform: scale(1.02); /* Slight scale effect */
-    }
-
-    .active {
-        font-weight: bold; /* Highlight active link */
-    }
-</style>
 <div class="container-fluid">
-    <div class="row">
-        <!-- Main Content Area -->
-        <div class="col-md-10">
+    <div class="row vh-60">
+        <!-- Sidebar Navigation - slightly shorter than full height -->
+        <aside class="col-md-2 bg-dark text-white d-flex flex-column p-0 shadow-sm rounded-3" style="height: calc(100vh - 80px);">
+            <!-- Course Title -->
+            <div class="bg-black bg-opacity-25 border-bottom border-secondary border-opacity-10 position-sticky top-0 z-1 rounded-top">
+                <div class="text-center py-3 d-flex align-items-center justify-content-center px-2">
+                    <i class="fas fa-book-open me-2 fs-5 text-white"></i>
+                    <span class="fs-5 fw-semibold text-white" style="white-space: normal;">{{ course.course_name }}</span>
+                </div>
+            </div>
+            
+            <!-- Scrollable Lessons Section - fills remaining height -->
+            <div id="lesson-scroll" class="overflow-auto small flex-grow-1 px-1">
+                <ul class="nav flex-column g-0">
+                    {% for session in sessions %}
+                    <li class="nav-item mb-1">
+                        <!-- Session Header -->
+                        <a title="{{ session.name }}" 
+                           class="nav-link text-white d-flex align-items-center py-2 px-2 rounded-2 {% if session.id == current_session.id %}bg-primary bg-opacity-75{% else %}text-light hover-bg-light hover-bg-opacity-10{% endif %}"
+                           href="{% url 'student_portal:course_content' course.pk session.id %}">
+                            <i class="fas fa-folder{% if session.id == current_session.id %}-open{% endif %} fa-xs me-2 text-warning opacity-75"></i>
+                            <span class="text-truncate fw-semibold">{{ session.name }}</span>
+                            {% if session.id == current_session.id %}
+                            <i class="fas fa-chevron-down fa-xs ms-auto"></i>
+                            {% endif %}
+                        </a>
 
-            <div class="message-content" id="message-content" style="display: none; margin-top: 1.25rem;">
-                <h3>Course Completion Progress</h3>
+                        <!-- Materials List -->
+                        <ul class="nav flex-column ms-3 mt-1">
+                            {% for material in materials %}
+                                {% if material.session.id == session.id %}
+                                <li>
+                                    <a title="{{ material.title }}" 
+                                       class="nav-link d-flex align-items-center py-1 px-2 rounded-2 {% if material.id == current_material.id %}text-white bg-primary bg-opacity-50{% else %}text-light text-opacity-75 hover-bg-light hover-bg-opacity-10{% endif %}"
+                                       href="{% url 'student_portal:course_content' course.pk session.id %}?file_id={{ material.id }}&file_type={{ material.material_type }}">
+                                        <i class="fas fa-xs me-2 {% if material.material_type == 'lecture' %}fa-play-circle text-info
+                                                  {% elif material.material_type == 'assignment' %}fa-tasks text-warning
+                                                  {% elif material.material_type == 'quiz' %}fa-question-circle text-danger
+                                                  {% elif material.material_type == 'resource' %}fa-file-alt text-success
+                                                  {% else %}fa-file-alt text-secondary{% endif %}"></i>
+                                        <span class="text-truncate small">{{ material.title }}</span>
+                                    </a>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="col-md-10 d-flex flex-column p-3">
+            <div id="message-content" class="alert alert-info d-none">
+                <h5>Course Completion Progress</h5>
                 <p>{{ completion_percent|floatformat:0 }}% completed</p>
                 {% if certificate_url %}
                 <div class="mt-3">
@@ -38,84 +73,51 @@
                 {% endif %}
             </div>
 
-            <!-- Materials List - Styled like a Book -->
-            <div class="materials-list mb-4 border rounded p-4 bg-light shadow-lg" style="border-radius: 0.9375rem;">
-                <ul class="list-unstyled">
-                    {% for material in materials %}
-                        {% if material.id == current_material.id %}
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span class="h5" style="font-weight: bold;">{{ material.title }}</span>
-                            <span class="badge bg-secondary text-white">{{ material.material_type|title }}</span>
-                        </div>
-                            <div class="content-detail mt-3 p-3 bg-light border rounded" style="overflow-y: auto; max-height: 70vh; font-family: serif; background-color: #fdfdfd;">
-                                {% if content_type in 'assignments labs lectures references' %}
-                                    {{ preview_content|safe }}
-                                {% else %}
-                                    <p class="text-muted fst-italic">No preview available for this material.</p>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    {% empty %}
-                        <li class="list-group-item text-muted">No materials available for this session.</li>
-                    {% endfor %}
-                </ul>
+            <div class="card shadow mb-4">
+                <div class="card-header d-flex justify-content-between">
+                    <h5>{{ current_material.title }}</h5>
+                    <span class="badge bg-secondary">{{ current_material.material_type|title }}</span>
+                </div>
+                <div class="card-body" style="max-height: 70vh;">
+                    {% if content_type in 'assignments labs lectures references' %}
+                        {{ preview_content|safe }}
+                    {% else %}
+                        <p class="text-muted fst-italic">No preview available for this material.</p>
+                    {% endif %}
+                </div>
             </div>
-            <!-- Action Buttons -->
-            {% if current_material %}
-            <div class="mt-3 d-flex gap-3 justify-content-end" id="action-buttons">
+
+            <!-- <div class="d-flex justify-content-end gap-3">
                 <a href="{% url 'student_portal:course_detail' course.id %}" class="btn btn-outline-secondary">Back to Course Detail</a>
+                <button id="complete-btn" 
+                        class="btn {% if completion_status %}btn-secondary{% else %}btn-success{% endif %}" 
+                        data-course-id="{{ course.pk }}" 
+                        data-file-id="{{ current_material.id }}">
+                    {% if completion_status %}Completed{% else %}Mark as Complete{% endif %}
+                </button>
+                {% if next_material or next_session %}
+                <a href="{% if next_session %}{% url 'student_portal:course_content' course.pk next_session.id %}{% else %}{% url 'student_portal:course_content' course.pk current_session.id %}?file_id={{ next_material.id }}&file_type={{ next_material.material_type }}{% endif %}" 
+                   class="btn btn-outline-primary">
+                    {% if next_session %}Next Session{% else %}Next Item{% endif %}
+                </a>
+                {% endif %}
+            </div> -->
+
+            {% if current_material %}
+            <div class="mt-3" id="action-buttons"> <!-- Add an ID for easy manipulation -->
                 <button id="complete-btn" class="btn {% if completion_status %}btn-secondary{% else %}btn-success{% endif %}" data-course-id="{{ course.pk }}" data-file-id="{{ current_material.id }}">
                     {% if completion_status %}Completed{% else %}Mark as Complete{% endif %}
                 </button>
-
                 {% if next_material or next_session %}
-                <a id="next-btn" href="{% if next_session %}{% url 'student_portal:course_content' course.pk next_session.id %}{% else %}{% url 'student_portal:course_content' course.pk current_session.id %}?file_id={{ next_material.id }}&file_type={{ next_material.material_type }}{% endif %}" class="btn btn-outline-secondary">
+                <a id="next-btn" href="{% if next_session %}{% url 'student_portal:course_content' course.pk next_session.id %}{% else %}{% url 'student_portal:course_content' course.pk current_session.id %}?file_id={{ next_material.id }}&file_type={{ next_material.material_type }}{% endif %}" class="btn btn-secondary">
                     {% if next_session %}Next Session{% else %}Next Item{% endif %}
                 </a>
                 {% endif %}
 
+                <a href="{% url 'student_portal:course_detail' course.id %}" class="btn btn-outline-secondary" style="background-color: gray;">Back to Course Detail</a>
             </div>
             {% endif %}
-
-
-        </div>
-        <!-- Sidebar Navigation -->
-        <div class="col-md-2 col-lg-2 bg-dark text-white border-end shadow-sm " id="sidebar" style="max-width:18.75rem;">
-            <div class="h4 text-center mt-3 fw-bold">{{ course.course_name }}</div>
-            <ul class="nav flex-column" id="session-tabs" role="tablist">
-                {% for session in sessions %}
-                <li class="nav-item" style="max-width: 14.375rem;">
-                    <a title="{{ session.name }}" class="nav-link d-flex align-items-center text-white p-3 border-radius mt-2
-                       {% if session.id == current_session.id %}active bg-primary border border-white{% else %}text-light{% endif %}"
-                       id="tab-{{ session.id }}"
-                       href="{% url 'student_portal:course_content' course.pk session.id %}"
-                       style="transition: background-color 0.3s, transform 0.2s; max-width: 18.75rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-
-                        {% if session.id == current_session.id %}
-                        <i class="fas fa-angle-left me-2"></i>
-                        {% endif %}
-                        <span class="text-truncate">{{ session.name }}</span>
-                    </a>
-
-                    <!-- Materials for the session -->
-                    <ul class="materials-list mt-2">
-                        {% for material in materials %}
-                            {% if material.session.id == session.id %}
-                            <li class="nav-item"> <!-- Adjust width as needed -->
-                                <a title="{{ material.title }}" class="nav-link text-light
-                                    {% if material.id == current_material.id %}active bg-primary border border-white{% else %}text-light{% endif %}"
-                                    href="{% url 'student_portal:course_content' course.pk session.id %}?file_id={{ material.id }}&file_type={{ material.material_type }}"
-                                    style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    <i class="fas fa-file-alt"></i> <span class="text-truncate">{{ material.title }}</span>
-                                </a>
-                            </li>
-                            {% endif %}
-                        {% endfor %}
-                    </ul>
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
+        </main>
     </div>
 </div>
 {% endblock %}
@@ -123,12 +125,48 @@
 {% block extra_js %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+document.addEventListener("DOMContentLoaded", function() {
+    const lessonList = document.getElementById("lesson-list");
+    const scrollUp = document.getElementById("scroll-up");
+    const scrollDown = document.getElementById("scroll-down");
+
+    // Scroll up
+    scrollUp.addEventListener("click", () => {
+        lessonList.scrollBy({ top: -100, behavior: "smooth" });
+    });
+
+    // Scroll down
+    scrollDown.addEventListener("click", () => {
+        lessonList.scrollBy({ top: 100, behavior: "smooth" });
+    });
+});
+</script>
+<script>
 $(document).ready(function() {
+    // Ensure the session tabs are visible
+    // $('#session-tabs').show();
+
     $('.materials-list').click(function() {
         $('#session-menu').toggle(); // Toggle materials list
         $('.message-content').hide(); // Hide Course Completion Progress
         $('.materials-list').show(); // Show materials list
         $('#action-buttons').show(); // Show action buttons
+    });
+
+    // Toggle visibility for Message content
+    $('#message-tab').click(function() {
+        $('#session-menu').hide(); // Hide materials list
+        $('.materials-list').hide(); // Hide materials list
+        $('.message-content').toggle(); // Toggle Course Completion Progress
+        $('#action-buttons').hide(); // Hide action buttons
+    });
+
+    // Certificate functionality
+    $('#view-certificate').click(function() {
+        var certificateUrl = "{{ certificate_url }}";
+        if (certificateUrl) {
+            window.open(certificateUrl, '_blank');
+        }
     });
 
     // Handle completion button click
@@ -138,7 +176,7 @@ $(document).ready(function() {
         var fileId = button.data('file-id');
 
         $.ajax({
-            url: "{% url 'student_portal:toggle_completion' course.pk %}",
+            url: "{% url 'course:toggle_completion' course.pk %}",
             method: 'POST',
             data: {
                 'file_id': fileId,
@@ -164,11 +202,10 @@ $(document).ready(function() {
 
     // Add iframe resizing logic here
     $('iframe').css({
-        'width': '100%',      // Set width to 100% to use the max width of the container
-        'height': '590px',    // Keep height as specified
-        'border': 'none'      // Remove border
+        'width': '65rem',
+        'height': '37rem',
+        'border': 'none'
     });
-
 });
 </script>
 {% endblock %}

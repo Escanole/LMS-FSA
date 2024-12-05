@@ -1,129 +1,301 @@
 {% extends 'basePortal.html' %}
 {% block title %}Course Details{% endblock %}
 {% block content %}
-
-
-<div class="container mt-5">
+<div class="container mt-2">
     <!-- Course Header -->
-    
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h1 class="card-title">{{ course.course_name }}</h1>
-            {% if course.instructor %}
-            <h6 class="card-subtitle text-muted">Instructor: 
-                <a href="{% url 'student_portal:instructor_profile' course.instructor.id %}">
-                    {{ course.instructor.get_full_name }} - {{ course.instructor.username }}
-                </a>
-            </h6>
-            {% else %}
-            <h6 class="card-subtitle text-muted">Instructor: Not assigned</h6>
-            {% endif %}
+    <div class="card shadow-lg border-0 p-4 mb-3 rounded-4">
+        <div class="row g-4">
+            <!-- Left Section -->
+            <div class="col-md-8">
+                <h1 class="display-6 text-dark fw-bold mb-2 lh-sm">{{ course.course_name }}</h1>
+                <p class="text-dark fs-6 mb-3 lh-base d-flex align-items-start">
+                    <i class="fas fa-info-circle me-2 mt-1"></i>
+                    {{ course.description }}
+                </p>
+                {% if course.instructor %}
+                <h6 class="text-dark mb-2 d-flex align-items-center">
+                    <span class="fs-6 me-2">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>
+                        Instructor:
+                    </span>
+                    <a href="{% url 'student_portal:instructor_profile' course.instructor.id %}" 
+                       class="btn btn-outline-secondary btn-sm rounded-pill text-dark border-1 d-flex align-items-center gap-2 px-3 py-1 hover-shadow-sm">
+                        <i class="fas fa-user-circle"></i>
+                        {{ course.instructor.get_full_name }} - {{ course.instructor.username }}
+                        <i class="fas fa-external-link-alt fs-6"></i>
+                    </a>
+                </h6>
+                {% else %}
+                <h6 class="text-dark mb-2">
+                    <i class="fas fa-chalkboard-teacher me-2"></i>
+                    Instructor: Not assigned
+                </h6>
+                {% endif %}
+                <p class="text-dark small mb-3 d-flex align-items-center">
+                    <i class="fas fa-clock me-2"></i>
+                    Last updated: <strong class="ms-1">November 2024</strong>
+                </p>
 
-            <p class="card-text mt-3"><strong>Description:</strong>: {{ course.description }}</p>
-            <p><strong>Users Enrolled:</strong> {{ users_enrolled_count }}</p>
-            
-            <!-- Average Rating -->
-            {% if course_average_rating %}
-                <strong>Average Rating:</strong>
-                {% for i in "12345"|make_list %}
-                    {% if course_average_rating|floatformat:1|add:"0.0" >= i %}
-                        <i class="fas fa-star text-warning"></i> <!-- Full Yellow Star -->
-                    {% else %}
-                        <i class="far fa-star text-muted"></i> <!-- Empty Star -->
-                    {% endif %}
-                {% endfor %}
-                <span class="ms-2">({{ course_average_rating|floatformat:1 }} / 5)</span>
-            {% else %}
-            <p class="text-muted mt-2">No ratings available</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Buttons -->
-    <div class="mt-auto text-center">
-        <a href="{% url 'student_portal:course_content' course.id sessions.0.id%}" class="btn btn-primary">Study</a>
-    {% if is_enrolled  %}
-        <a href="{% url 'student_portal:unenroll' course.pk %}" class="btn btn-outline-danger me-2" title="Click to unenroll">Unenroll</a>
-    {% else %}
-        <a href="{% url 'student_portal:enroll' course.id %}" class="btn btn-success me-2" title="Click to enroll">Enroll</a>
-    {% endif %}
-        <a href="{% url 'student_portal:course_list' %}" class="btn btn-secondary">Back to Courses</a>
-    </div>
-    <!-- Tags -->
-    {% if random_tags %}
-    <div class="mb-4">
-        <h5>Tags:</h5>
-        {% for tag in random_tags %}
-        <span class="badge bg-primary">{{ tag.name }}</span>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Prerequisites -->
-    {% if prerequisites %}
-    <div class="mb-4">
-        <h5>Prerequisites:</h5>
-        <ul class="list-group">
-            {% for prerequisite in prerequisites %}
-            <li class="list-group-item">{{ prerequisite.course_name }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% else %}
-    <p class="text-muted">No prerequisites for this course.</p>
-    {% endif %}
-
-    <!-- Sessions -->
-    <div class="mb-4">
-        <h5>Sessions ({{ session_count }})</h5>
-        <ul class="list-group">
-            {% for session in sessions %}
-            <li class="list-group-item">{{ session.name }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
-    <!-- Latest Feedbacks -->
-    {% if latest_feedbacks %}
-    <div class="mb-4">
-        <h5>Latest Feedback</h5>
-        <div class="list-group">
-            {% for feedback in latest_feedbacks %}
-            
-            <div class="list-group-item">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="mb-1"><strong>{{ feedback.student.get_full_name }} {{ feedback.student.username }}</strong> <small class="text-muted">- {{ feedback.created_at|date:"F j, Y" }}</small></p>
-                        <p class="mb-0">{{ feedback.comments|truncatewords:20 }}</p>
-                    </div>
-                    
-                    <div class="ms-2">
+                <!-- Rating Section -->
+                <div class="d-flex align-items-center flex-wrap gap-3 mb-4">
+                    <div class="d-flex align-items-center">
                         
-                        <span class="ms-2">({{ course_average_rating|floatformat:1 }} / 5)</span>
-                        <div class="d-flex align-items-center mt-3">
-                            {% if course_average_rating %}
-                                <span class="text-warning">
-                                    {% for i in "12345"|make_list %}
-                                        {% if course_average_rating|floatformat:1|add:"0.0" >= i %}
-                                            <i class="fas fa-star text-warning"></i>
-                                        {% else %}
-                                            <i class="far fa-star"></i>
-                                        {% endif %}
-                                    {% endfor %}
-                                </span>
-                            {% else %}
-                                <span class="text-muted">No ratings yet</span>
-                            {% endif %}
+                        <span class="text-warning fs-6 me-2">
+                            {% for i in "12345"|make_list %}
+                                {% if course_average_rating >= forloop.counter %}
+                                <i class="fas fa-star"></i>
+                                {% else %}
+                                <i class="far fa-star"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                        <span class="text-dark small">({{ course_average_rating|floatformat:1 }})</span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-users me-2"></i>
+                        <span class="text-dark small">{{ users_enrolled_count }} students enrolled</span>
+                    </div>
+                </div>
+
+                <!-- What You'll Learn Section -->
+                <div class="bg-light p-3 rounded-4">
+                    <h5 class="fw-bold text-dark mb-3 d-flex align-items-center fs-6">
+                        <i class="fas fa-graduation-cap me-2"></i>
+                        What you'll learn
+                    </h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="fas fa-check-circle text-dark me-2 mt-1"></i>
+                                    <span class="text-dark small">Obtain necessary skills to pass 1Z0-808 Certification</span>
+                                </li>
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="fas fa-check-circle text-dark me-2 mt-1"></i>
+                                    <span class="text-dark small">Master Java Syntax</span>
+                                </li>
+                                <li class="d-flex align-items-start">
+                                    <i class="fas fa-check-circle text-dark me-2 mt-1"></i>
+                                    <span class="text-dark small">Object-oriented programming</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="fas fa-check-circle text-dark me-2 mt-1"></i>
+                                    <span class="text-dark small">Obtain necessary skills to pass 1Z0-811 Certification</span>
+                                </li>
+                                <li class="d-flex align-items-start mb-2">
+                                    <i class="fas fa-check-circle text-dark me-2 mt-1"></i>
+                                    <span class="text-dark small">Receive the confidence in passing Oracle Exam</span>
+                                </li>
+                                <li class="d-flex align-items-start">
+                                    <i class="fas fa-check-circle text-dark me-2 mt-1"></i>
+                                    <span class="text-dark small">Practical tips</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             </div>
-            {% endfor %}
+
+            <!-- Right Section -->
+            <div class="col-md-4">
+                <div class="card shadow-lg border-0 rounded-4 sticky-top" style="top: 10px;">
+                    <img src="https://via.placeholder.com/350x200" alt="Course Image" 
+                         class="card-img-top rounded-top-4 object-fit-cover" style="height: 200px;">
+                    <div class="card-body bg-light p-4">
+                        {% if is_enrolled %}
+                        <!-- Start Learning Button - Shows when enrolled -->
+                        <a href="{% url 'student_portal:course_content' course.id sessions.0.id %}" 
+                           class="btn btn-success w-100 mb-2 fw-bold py-2 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm fs-5">
+                            <i class="fas fa-book"></i> Start Learning
+                        </a>
+                        <!-- Unenroll Button - Shows when enrolled -->
+                         <!--
+                        <a href="{% url 'student_portal:unenroll' course.id %}" 
+                           class="btn btn-outline-danger w-100 mb-4 py-2 rounded-3 d-flex align-items-center justify-content-center gap-2 fs-6"
+                           onclick="return confirm('Are you sure you want to unenroll from this course?')">
+                            <i class="fas fa-times"></i> Unenroll
+                        </a>
+                        -->
+                        {% else %}
+                        <!-- Enroll Button - Shows when not enrolled -->
+                        <a href="{% url 'student_portal:enroll' course.id %}" 
+                           class="btn btn-primary w-100 mb-4 fw-bold py-2 rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm fs-5">
+                            <i class="fas fa-check"></i> Enroll now
+                        </a>
+                        {% endif %}
+
+                        <!-- Course Features List -->
+                        <ul class="list-unstyled text-dark mb-0">
+                            <li class="d-flex align-items-center gap-2 mb-3 py-1">
+                                <i class="fas fa-play-circle text-dark fs-6"></i> 
+                                <span class="small">23 hours on-demand video</span>
+                            </li>
+                            <li class="d-flex align-items-center gap-2 mb-3 py-1">
+                                <i class="fas fa-file-alt text-dark fs-6"></i> 
+                                <span class="small">30 articles</span>
+                            </li>
+                            <li class="d-flex align-items-center gap-2 mb-3 py-1">
+                                <i class="fas fa-code text-dark fs-6"></i> 
+                                <span class="small">39 coding exercises</span>
+                            </li>
+                            <li class="d-flex align-items-center gap-2 mb-3 py-1">
+                                <i class="fas fa-mobile-alt text-dark fs-6"></i> 
+                                <span class="small">Access on mobile</span>
+                            </li>
+                            <li class="d-flex align-items-center gap-2 py-1">
+                                <i class="fas fa-certificate text-dark fs-6"></i> 
+                                <span class="small">Certificate of completion</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    {% else %}
-    <p class="text-muted">No feedback available yet.</p>
-    {% endif %}
-</div>
 
+    <!-- Course Content Preview Section -->
+    <div class="card shadow-sm border-0 rounded-4 p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold text-dark mb-0">Course Content</h3>
+            <button class="btn btn-link text-dark text-decoration-none p-2 rounded-circle hover-bg-light" 
+                    type="button" 
+                    data-bs-toggle="collapse" 
+                    data-bs-target="#courseContentSection">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+
+        <div class="collapse" id="courseContentSection">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-play-circle text-dark me-2"></i> 
+                            <span class="text-dark">23 hours on-demand video</span>
+                        </li>
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-file-alt text-dark me-2"></i> 
+                            <span class="text-dark">30 articles</span>
+                        </li>
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-code text-dark me-2"></i> 
+                            <span class="text-dark">39 coding exercises</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-mobile-alt text-dark me-2"></i> 
+                            <span class="text-dark">Access on mobile</span>
+                        </li>
+                        <li class="d-flex align-items-center mb-2">
+                            <i class="fas fa-certificate text-dark me-2"></i> 
+                            <span class="text-dark">Certificate of completion</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <p class="text-dark">{{ sessions|length }} sections • {{ total_lectures }} lectures • {{ total_duration }} total length</p>
+            
+            <div class="accordion accordion-flush" id="courseContent">
+                {% for session in sessions %}
+                <div class="accordion-item border-0 mb-2 rounded-3 bg-light">
+                    <h2 class="accordion-header" id="heading{{ session.id }}">
+                        <button class="accordion-button collapsed rounded-3 bg-light shadow-none text-dark" type="button" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#collapse{{ session.id }}" 
+                                aria-expanded="false" 
+                                aria-controls="collapse{{ session.id }}">
+                            <div class="w-100 d-flex justify-content-between align-items-center">
+                                <span class="fw-semibold text-dark">{{ session.title }}</span>
+                                <span class="text-dark ms-3">{{ session.lectures.count }} lectures</span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ session.id }}" 
+                         class="accordion-collapse collapse" 
+                         aria-labelledby="heading{{ session.id }}" 
+                         data-bs-parent="#courseContent">
+                        <div class="accordion-body bg-white rounded-bottom-3">
+                            <ul class="list-unstyled mb-0">
+                                {% for lecture in session.lectures.all %}
+                                <li class="d-flex align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                    <i class="fas fa-play-circle text-dark me-2"></i>
+                                    <div class="flex-grow-1">
+                                        <div class="text-dark">{{ lecture.title }}</div>
+                                        <div class="text-dark">Lecture: {{ lecture.lesson_name }}</div>
+                                    </div>
+                                    <span class="text-dark ms-3">{{ lecture.duration }}</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest Feedback Section -->
+    <div class="card shadow-sm border-0 rounded-4 p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="text-dark fw-bold mb-0">Latest Feedback</h3>
+            {% if is_enrolled %}
+            <a href="{% url 'feedback:combined_feedback' course.id %}" 
+               class="btn btn-outline-primary btn-sm rounded-pill">
+                <i class="fas fa-comment-alt me-1"></i>
+                Give Feedback
+            </a>
+            {% endif %}
+        </div>
+        {% if latest_feedbacks %}
+        <div class="list-group list-group-flush">
+            {% for feedback in latest_feedbacks %}
+            <div class="list-group-item bg-transparent px-0">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold mb-0">{{ feedback.student.get_full_name }}</h6>
+                    <small class="text-dark">{{ feedback.created_at|date:"F j, Y" }}</small>
+                </div>
+                <p class="text-dark mb-0">{{ feedback.comments }}</p>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-dark mb-0">No feedback available yet.</p>
+        {% endif %}
+    </div>
+</div>
+<script>
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+    });
+
+    // Handle course content collapse icon
+    document.querySelector('[data-bs-target="#courseContentSection"]').addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        if (icon.classList.contains('fa-chevron-up')) {
+            icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+        } else {
+            icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+        }
+    });
+
+    // Handle sessions collapse icon
+    document.querySelector('[href="#sessionsCollapse"]').addEventListener('click', function() {
+        const icon = this.querySelector('i');
+        if (icon.classList.contains('fa-chevron-down')) {
+            icon.classList.replace('fa-chevron-down', 'fa-chevron-up');
+        } else {
+            icon.classList.replace('fa-chevron-up', 'fa-chevron-down');
+        }
+    });
+</script>
 {% endblock %}

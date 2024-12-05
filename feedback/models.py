@@ -3,9 +3,13 @@ from django.conf import settings
 from course.models import Course  # Assuming Course is in the course app
 from training_program.models import TrainingProgram  # Assuming Training Program model exists
 
+
 class InstructorFeedback(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    instructor = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="instructor_feedback", on_delete=models.CASCADE)
+    instructor = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="instructor_feedback",
+                                   on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, related_name="feedbacks",
+                               on_delete=models.CASCADE, default=1)  # Link feedback to a specific course
 
     course_knowledge = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])
     communication_skills = models.IntegerField(choices=[(i, str(i)) for i in range(1, 6)])
@@ -20,6 +24,7 @@ class InstructorFeedback(models.Model):
 
     comments = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
 
 class CourseFeedback(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -38,8 +43,14 @@ class CourseFeedback(models.Model):
         return (self.course_material + self.clarity_of_explanation +
                 self.course_structure + self.practical_applications + self.support_materials) / 5.0
 
-    comments = models.TextField(blank=True, null=True)
+    course_comment = models.TextField(blank=True, null=True)
+    material_comment = models.TextField(blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Feedback for {self.course.course_name} by {self.student.username}"
+
 
 class TrainingProgramFeedback(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)

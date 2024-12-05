@@ -47,7 +47,8 @@
                         <tr>
                             <th>Course</th>
                             <th>Average Rating</th>
-                            <th>Comments</th>
+                            <th>Material Comments</th>
+                            <th>Course Comments</th>
                             <th>Date</th>
                             <th>Actions</th>
                         </tr>
@@ -57,7 +58,8 @@
                         <tr>
                             <td>{{ feedback.course.course_name }}</td>
                             <td>{{ feedback.average_rating }}</td>
-                            <td>{{ feedback.comments }}</td>
+                            <td>{{ feedback.material_comment }}</td>
+                            <td>{{ feedback.course_comment }}</td>
                             <td>{{ feedback.created_at }}</td>
                             <td>
                                 <a href="{% url 'feedback:course_feedback_detail' feedback.id %}" class="btn btn-info">View Details</a>
@@ -106,87 +108,105 @@
             </nav>
         </div>
 
-        <!-- Instructor Feedback Tab -->
-        <div class="tab-pane fade" id="instructor-feedback" role="tabpanel" aria-labelledby="instructor-feedback-tab">
-            <h3>Instructor Feedback</h3>
-            <div class="d-flex mb-3">
-                <input type="text" id="instructorSearchBar" class="form-control me-2" placeholder="Search..." onkeyup="filterInstructorFeedback()">
-                <select id="instructorFilter" class="form-select me-2" onchange="filterInstructorFeedback()">
-                    <option value="">All Instructors</option>
-                    {% for instructor in instructors %}
-                    <option value="{{ instructor.username }}">{{ instructor.username }}</option>
-                    {% endfor %}
-                </select>
-                <button id="instructorRatingSortButton" class="btn btn-secondary" onclick="toggleInstructorRatingSort()">
-                    <i class="fas fa-sort-amount-down"></i>
-                </button>
-            </div>
+<!-- Instructor Feedback Tab -->
+<div class="tab-pane fade" id="instructor-feedback" role="tabpanel" aria-labelledby="instructor-feedback-tab">
+    <h3>Instructor Feedback</h3>
 
-            <!-- Combined table with thead and tbody -->
-            <div class="feedback-scroll-container">
-                <table class="table table-striped" id="instructorFeedbackTable">
-                    <thead>
-                        <tr>
-                            <th>Instructor</th>
-                            <th>Average Rating</th>
-                            <th>Comments</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for feedback in instructor_page_obj %}
-                        <tr>
-                            <td>{{ feedback.instructor.username }}</td>
-                            <td>{{ feedback.average_rating }}</td>
-                            <td>{{ feedback.comments }}</td>
-                            <td>{{ feedback.created_at }}</td>
-                            <td>
-                                <a href="{% url 'feedback:instructor_feedback_detail' feedback.id %}" class="btn btn-info">View Details</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    <!-- Filters Section -->
+    <div class="d-flex mb-3">
+        <!-- Search Bar for feedback -->
+        <input type="text" id="instructorSearchBar" class="form-control me-2" placeholder="Search..." onkeyup="filterInstructorFeedback()">
 
-            <!-- Pagination controls -->
-            <nav aria-label="Page navigation" class="mb-6">
-                <ul class="pagination justify-content-center">
-                    {% if instructor_page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page=1" aria-label="First">
-                                <span aria-hidden="true">&laquo;&laquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ instructor_page_obj.previous_page_number }}" aria-label="Previous">
-                                <span aria-hidden="true">&laquo;</span>
-                            </a>
-                        </li>
-                    {% endif %}
-                    {% for num in instructor_page_obj.paginator.page_range %}
-                        {% if instructor_page_obj.number == num %}
-                            <li class="page-item active"><a class="page-link main-color">{{ num }}</a></li>
-                        {% elif num > instructor_page_obj.number|add:-3 and num < instructor_page_obj.number|add:3 %}
-                            <li class="page-item"><a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ num }}">{{ num }}</a></li>
-                        {% endif %}
-                    {% endfor %}
-                    {% if instructor_page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ instructor_page_obj.next_page_number }}" aria-label="Next">
-                                <span aria-hidden="true">&raquo;</span>
-                            </a>
-                        </li>
-                        <li class="page-item">
-                            <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ instructor_page_obj.paginator.num_pages }}" aria-label="Last">
-                                <span aria-hidden="true">&raquo;&raquo;</span>
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
+        <!-- Instructor Filter Dropdown -->
+        <select id="instructorFilter" class="form-select me-2" onchange="filterInstructorFeedback()">
+            <option value="">All Instructors</option>
+            {% for instructor in instructors %}
+            <option value="{{ instructor.username }}">{{ instructor.username }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- New Course Filter Dropdown -->
+        <select id="courseFilterInstructor" class="form-select me-2" onchange="filterInstructorFeedback()">
+            <option value="">All Courses</option>
+            {% for course in courses %}
+            <option value="{{ course.course_name }}">{{ course.course_name }}</option>
+            {% endfor %}
+        </select>
+
+        <!-- Rating Sort Button -->
+        <button id="instructorRatingSortButton" class="btn btn-secondary" onclick="toggleInstructorRatingSort()">
+            <i class="fas fa-sort-amount-down"></i>
+        </button>
+    </div>
+
+    <!-- Feedback Table with thead and tbody -->
+    <div class="feedback-scroll-container">
+        <table class="table table-striped" id="instructorFeedbackTable">
+            <thead>
+                <tr>
+                    <th>Instructor</th>
+                    <th>Course</th>
+                    <th>Average Rating</th>
+                    <th>Comments</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for feedback in instructor_page_obj %}
+                <tr>
+                    <td>{{ feedback.instructor.username }}</td>
+                    <td>{{ feedback.course.course_name }}</td>
+                    <td>{{ feedback.average_rating }}</td>
+                    <td>{{ feedback.comments }}</td>
+                    <td>{{ feedback.created_at }}</td>
+                    <td>
+                        <a href="{% url 'feedback:instructor_feedback_detail' feedback.id %}" class="btn btn-info">View Details</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <nav aria-label="Page navigation" class="mb-6">
+        <ul class="pagination justify-content-center">
+            {% if instructor_page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page=1" aria-label="First">
+                        <span aria-hidden="true">&laquo;&laquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ instructor_page_obj.previous_page_number }}" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+            {% for num in instructor_page_obj.paginator.page_range %}
+                {% if instructor_page_obj.number == num %}
+                    <li class="page-item active"><a class="page-link main-color">{{ num }}</a></li>
+                {% elif num > instructor_page_obj.number|add:-3 and num < instructor_page_obj.number|add:3 %}
+                    <li class="page-item"><a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if instructor_page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ instructor_page_obj.next_page_number }}" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link main-color-text" href="?tab=instructor-feedback&instructor_page={{ instructor_page_obj.paginator.num_pages }}" aria-label="Last">
+                        <span aria-hidden="true">&raquo;&raquo;</span>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+
 
         <div class="tab-pane fade" id="analyst" role="tabpanel" aria-labelledby="analyst-tab">
             <h3>Course’s Criterias Report Graph</h3>
@@ -291,28 +311,47 @@
     }
 
     function filterInstructorFeedback() {
-        const searchBar = document.getElementById('instructorSearchBar').value.toLowerCase();
+        const searchBar = document.getElementById('instructorSearchBar').value.trim().toLowerCase();
         const instructorFilter = document.getElementById('instructorFilter').value.toLowerCase();
+        const courseFilter = document.getElementById('courseFilterInstructor').value.toLowerCase(); // Get selected course filter
         const table = document.getElementById('instructorFeedbackTable');
         const rows = table.getElementsByTagName('tr');
 
         for (let i = 1; i < rows.length; i++) {
             const instructor = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
-            const comments = rows[i].getElementsByTagName('td')[2].textContent.toLowerCase();
+            const course = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase(); // Assuming course is in the second column
+            const comments = rows[i].getElementsByTagName('td')[3].textContent.toLowerCase(); // Assuming comments are in the fourth column
 
             let showRow = true;
 
+            // Filter by exact course match
+            if (courseFilter && course !== courseFilter) {
+                showRow = false;
+            }
+
+            // Filter by exact instructor match
             if (instructorFilter && instructor !== instructorFilter) {
                 showRow = false;
             }
 
-            if (searchBar && !instructor.includes(searchBar) && !comments.includes(searchBar)) {
-                showRow = false;
+            // Filter by search bar: Exact Phrase Match
+            if (searchBar) {
+                const searchTerms = searchBar.split(' ');  // Split the search term into an array of words
+
+                const matchesInstructor = searchTerms.every(term => instructor.includes(term));
+                const matchesCourse = searchTerms.every(term => course.includes(term));
+                const matchesComments = searchTerms.every(term => comments.includes(term));
+
+                if (!(matchesInstructor || matchesCourse || matchesComments)) {
+                    showRow = false;
+                }
             }
 
+            // Toggle row visibility based on filters
             rows[i].style.display = showRow ? '' : 'none';
         }
     }
+
 
     function toggleInstructorRatingSort() {
         const button = document.getElementById('instructorRatingSortButton');
@@ -323,8 +362,8 @@
         let ascending = icon.classList.contains('fa-sort-amount-down');
 
         rows.sort((a, b) => {
-            const ratingA = parseFloat(a.getElementsByTagName('td')[1].textContent);
-            const ratingB = parseFloat(b.getElementsByTagName('td')[1].textContent);
+            const ratingA = parseFloat(a.getElementsByTagName('td')[2].textContent);
+            const ratingB = parseFloat(b.getElementsByTagName('td')[2].textContent);
             return ascending ? ratingA - ratingB : ratingB - ratingA;
         });
 

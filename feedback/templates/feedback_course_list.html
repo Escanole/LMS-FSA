@@ -150,9 +150,9 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.read-more-link').forEach(link => {
@@ -163,10 +163,16 @@
                 const commentElement = document.getElementById(`comment-${commentId}`);
 
                 if (commentElement.classList.contains('full-comment')) {
+                    commentElement.style.whiteSpace = 'nowrap'; // Truncate
+                    commentElement.style.overflow = 'hidden';
+                    commentElement.style.textOverflow = 'ellipsis';
                     commentElement.textContent = shortComment;
                     commentElement.classList.remove('full-comment');
                     this.textContent = 'Read more';
                 } else {
+                    commentElement.style.whiteSpace = 'normal'; // Allow full content display
+                    commentElement.style.overflow = 'visible';
+                    commentElement.style.textOverflow = 'unset';
                     commentElement.textContent = fullComment;
                     commentElement.classList.add('full-comment');
                     this.textContent = 'Show less';
