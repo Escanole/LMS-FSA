@@ -26,6 +26,118 @@ from department.models import Department
 from django.utils import timezone
 import shutil
 import json
+from django.utils.text import slugify
+
+
+def remove_accents(input_str):
+    nfkd_form = unicodedata.normalize('NFKD', input_str)
+    return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
+
+
+def import_course_folder_view(request):
+    if request.method == 'POST' and request.FILES.getlist('course_folder'):
+        course_folder_files = request.FILES.getlist('course_folder')
+        relative_paths = request.POST.getlist('relative_paths[]')  # Relative paths from JavaScript
+
+        try:
+            for index, uploaded_file in enumerate(course_folder_files):
+                try:
+                    # Use the relative path from JavaScript
+                    relative_path = relative_paths[index]
+                    path_parts = relative_path.split('/')  # Use relative path for folder structure
+                    print(path_parts)
+
+                    if len(path_parts) < 4:
+                        raise ValueError("Invalid file structure: Less than 4 components in path")
+
+                    # Extract information
+                    course_info = path_parts[0]  # course_code-course_name
+                    session_name = path_parts[1]  # session
+                    material_type = path_parts[2]  # material-type
+                    file_name = path_parts[3]  # file.pdf
+
+                    # Split course_code and course_name
+                    course_code, course_name = course_info.split('-', 1)
+                    course_code = course_code.strip()
+                    course_name = course_name.strip()
+
+                    # Validate material type
+                    if material_type not in dict(CourseMaterial.MATERIAL_TYPE_CHOICES):
+                        raise ValueError(f"Invalid material type: {material_type}")
+
+                    # Create or retrieve the course
+                    course, created = Course.objects.get_or_create(
+                        course_code=course_code,
+                        defaults={'course_name': course_name}
+                    )
+
+                    # Create or retrieve the session
+                    session, created = Session.objects.get_or_create(
+                        course=course,
+                        name=session_name.strip(),
+                        defaults={'order': Session.objects.filter(course=course).count() + 1}
+                    )
+
+                    # Save the file to storage
+                    sanitized_name = remove_accents(file_name)
+                    storage_path = default_storage.save(
+                        f'course_pdf/{slugify(course_code)}/{sanitized_name}',
+                        uploaded_file
+                    )
+                    file_url = default_storage.url(storage_path)
+
+                    # Create an iframe for viewing the PDF
+                    iframe_html = f'<iframe src="{file_url}#toolbar=0" style="border: none; width: 100%; height: 590px;"></iframe>'
+
+                    # Create the reading material
+                    reading_material = ReadingMaterial.objects.create(
+                        title=file_name,
+                        content=iframe_html
+                    )
+
+                    # Create the course material
+                    course_material = CourseMaterial.objects.create(
+                        session=session,
+                        material_id=reading_material.id,
+                        material_type=material_type,
+                        title=reading_material.title,
+                        order=CourseMaterial.objects.filter(session=session).count() + 1
+                    )
+
+                    # Link the reading material to the course material
+                    reading_material.material = course_material
+                    reading_material.save()
+
+                except ValueError as ve:
+                    print(f"Skipping file {uploaded_file.name}: {str(ve)}")
+                    continue
+
+            return JsonResponse({'message': 'Courses and materials imported successfully!'})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+def apply_discount(request):
+    if request.method == 'POST':
+        selected_courses = request.POST.getlist("selected_courses[]")
+        discount = request.POST.get("discount")
+
+        if "all_courses" in selected_courses:
+            courses_to_update = Course.objects.all()
+        else:
+            courses_to_update = Course.objects.filter(id__in=selected_courses)
+        # Xử lý logic lưu giảm giá tại đây
+        # Ví dụ: gán discount cho mỗi khóa học
+        for course in courses_to_update:
+            course.discount = discount
+            course.save()
+
+        return redirect('course:apply_discount')  # Tên URL của view này
+
+    # Lấy tất cả các khóa học để hiển thị trong danh sách
+    all_courses = Course.objects.all()
+    return render(request, 'course/apply_discount.html', {'all_courses': all_courses})
 
 
 @login_required
@@ -551,6 +663,9 @@ def course_detail(request, pk):
     # Get the course based on the primary key (pk)
     course = get_object_or_404(Course, pk=pk)
 
+    # Check if the course is published or unpublished
+    is_unpublished = not course.published 
+
     if request.user.is_superuser:
         can_enroll = True
     else:
@@ -561,6 +676,7 @@ def course_detail(request, pk):
             course_departments.filter(id__in=user_departments).exists() or
             not course_departments.exists()
         )
+
     # Get related documents and videos
     is_enrolled = Enrollment.objects.filter(student=request.user, course=course, is_active=True).exists()
     users_enrolled_count = Enrollment.objects.filter(course=course, is_active=True).count()
@@ -580,11 +696,12 @@ def course_detail(request, pk):
     else:
         course_average_rating_star = 0
 
-        # Get prerequisite courses directly from the course's `prerequisites` column
+    # Get prerequisite courses directly from the course's `prerequisites` column
     prerequisites = course.prerequisites.all()
 
     sessions = Session.objects.filter(course=course)
     session_count = sessions.count()
+
     # Get 5 random tags
     all_tags = list(course.tags.all())
     random_tags = random.sample(all_tags, min(4, len(all_tags)))
@@ -592,6 +709,27 @@ def course_detail(request, pk):
     # Fetch the 5 newest feedback entries for this course
     latest_feedbacks = CourseFeedback.objects.filter(course=course).order_by('-created_at')[:5]
 
+    if Enrollment.objects.filter(student=request.user, course=course).exists():
+        enrollment = Enrollment.objects.get(student=request.user, course=course)
+    else:
+        enrollment = None
+
+    if enrollment:
+        if enrollment.last_accessed_material:
+            last_accessed_material = enrollment.last_accessed_material
+            last_accessed_session = last_accessed_material.session
+        else:
+            last_accessed_session = sessions.first()
+            if last_accessed_session and last_accessed_session.materials.exists():
+                last_accessed_material = last_accessed_session.materials.first()
+            else:
+                last_accessed_material = None
+    else:
+        last_accessed_session = sessions.first()
+        if last_accessed_session and last_accessed_session.materials.exists():
+            last_accessed_material = last_accessed_session.materials.first()
+        else:
+            last_accessed_material = None
 
     # Get all users who are instructors (you might need to adjust this query based on how you identify instructors)
     instructor = course.instructor  # Assuming instructors are staff members
@@ -612,6 +750,7 @@ def course_detail(request, pk):
         for enrollment in enrolled_users
     ]
 
+    # Add the unpublished status to the context to control the button display
     context = {
         'course': course,
         'prerequisites': prerequisites,
@@ -620,7 +759,6 @@ def course_detail(request, pk):
         'course_average_rating_star': course_average_rating_star,
         'course_average_rating': course_average_rating,
         'feedbacks': feedbacks,
-        'sessions': sessions,
         'session_count': session_count,
         'latest_feedbacks': latest_feedbacks,
         'tags': course.tags.all() if course.tags else [],
@@ -629,9 +767,13 @@ def course_detail(request, pk):
         'user_progress': user_progress,
         'random_tags': random_tags,
         'can_enroll': can_enroll,
+        'last_accessed_material': last_accessed_material,
+        'last_accessed_session': last_accessed_session,
+        'is_unpublished': is_unpublished,  # This flag determines if the course is unpublished
     }
 
     return render(request, 'course/course_detail.html', context)
+
 
 def users_enrolled(request, pk):
     # Lấy môn học dựa trên khóa chính (primary key)
@@ -736,13 +878,20 @@ def reading_material_detail(request, id):
 
 
 def start_viewing(user, material, request):
-    # Get the last viewed material from the session
+    # Get the last viewed material URL and material ID from the session
+    last_viewed_url = request.session.get('last_viewed_url', None)
     last_viewed_material = request.session.get('last_viewed_material', None)
 
-    # Only increment come_back if the material being viewed is different
-    # from the previously viewed material stored in the session
-    if last_viewed_material != str(material.id):
-        # The user is viewing a new material, so increment come_back
+    # Build the current material's URL
+    current_url = request.build_absolute_uri()
+    current_material_id = str(material.id)
+
+    # Check if the current URL or material is different from the last viewed
+    is_new_material = last_viewed_material != current_material_id
+    is_new_url = last_viewed_url != current_url
+
+    if is_new_material or is_new_url:
+        # Create or update the MaterialViewingDuration entry
         viewing_duration, created = MaterialViewingDuration.objects.get_or_create(
             user=user,
             material=material,
@@ -750,17 +899,19 @@ def start_viewing(user, material, request):
         )
 
         if not created:
+            # Update start time and increment come_back if a new view session
             viewing_duration.start_time = timezone.now()
+            if is_new_material:
+                viewing_duration.come_back += 1
 
-        # Increment come_back since the material is being viewed from a different one
-            viewing_duration.come_back += 1
         viewing_duration.save()
 
-        # Store the current material id in session to track the last viewed material
-        request.session['last_viewed_material'] = str(material.id)
+        # Update session tracking
+        request.session['last_viewed_material'] = current_material_id
+        request.session['last_viewed_url'] = current_url
     else:
-        # Material is being reloaded, do not increment come_back
-        print("Reloading the same material, no increment on come_back.")
+        # Reload of the same material detected
+        print("Page reload detected; no update to come_back or start time.")
 
 def end_viewing(user, material):
     try:
@@ -795,6 +946,43 @@ def end_viewing_ajax(request):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
 
+
+def extract_course_content_url(url):
+    # Regular expression to capture 'course/<course_id>/content' part of the URL
+    match = re.search(r'/course/(\d+)/content', url)
+    if match:
+        return match.group(0)  # Returns the matched string '/course/<course_id>/content'
+    return None  # Return None if no match is found
+
+from django.views.decorators.csrf import csrf_exempt
+
+
+@login_required
+def save_last_accessed_material(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        material_id = data.get('material_id')
+        course_id = data.get('course_id')  # Get the course_id from the JSON data
+
+        # Ensure that the course_id exists
+        if not course_id:
+            return JsonResponse({'success': False, 'error': 'Course ID is required'})
+
+        try:
+            enrollment = Enrollment.objects.get(student=request.user, course__pk=course_id)
+
+            # Update the enrollment with the last accessed material
+            material = CourseMaterial.objects.get(id=material_id)
+            enrollment.last_accessed_material = material
+            enrollment.save()
+            return JsonResponse({'success': True})
+
+        except CourseMaterial.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Material not found'})
+        except Enrollment.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Enrollment not found'})
+
+
 @login_required
 def course_content(request, pk, session_id):
     module_groups = ModuleGroup.objects.all()
@@ -807,29 +995,40 @@ def course_content(request, pk, session_id):
 
     materials = CourseMaterial.objects.filter(session=current_session).order_by('order')
 
+    enrollment = Enrollment.objects.get(student=request.user, course=course)
+
     file_id = request.GET.get('file_id')
     file_type = request.GET.get('file_type')
-    current_material = None
     if file_id and file_type:
         try:
-            current_material = CourseMaterial.objects.get(id=file_id, material_type=file_type,
-                                                          session=current_session)
+            current_material = CourseMaterial.objects.get(id=file_id, material_type=file_type, session=current_session)
         except CourseMaterial.DoesNotExist:
             current_material = materials.first() if materials.exists() else None
     else:
         current_material = materials.first() if materials.exists() else None
 
     if current_material:
-        # Start viewing the current material
         start_viewing(request.user, current_material, request)
-        request.session['previous_material_id'] = current_material.id
+
+    # Increment come_back only if the user is not navigating between materials or reloading
+    referer_url = request.META.get('HTTP_REFERER', '')
+    current_url = request.build_absolute_uri()
+
+    if f'course/{pk}/content' not in referer_url:
+        enrollment.come_back += 1
+        enrollment.save()
+    else:
+        referer_course_url = extract_course_content_url(referer_url)
+        current_course_url = extract_course_content_url(current_url)
+        if referer_course_url != current_course_url:
+            enrollment.come_back += 1
+            enrollment.save()
 
     next_material = materials.filter(order__gt=current_material.order).first() if current_material else None
     next_session = None
 
     if not next_material:
-        next_session = Session.objects.filter(course=course, order__gt=current_session.order).order_by(
-            'order').first()
+        next_session = Session.objects.filter(course=course, order__gt=current_session.order).order_by('order').first()
         if next_session:
             next_material = CourseMaterial.objects.filter(session=next_session).order_by('order').first()
 
@@ -896,7 +1095,7 @@ def course_content(request, pk, session_id):
         'certificate_url': certificate_url,
         'next_session': next_session,
         'assessment': assessment,
-        'modules_groups': module_groups
+        'modules_groups': module_groups,
     }
 
     return render(request, 'course/course_content.html', context)
@@ -953,10 +1152,6 @@ def toggle_completion(request, pk):
         'next_session_id': next_session_id
     })
 # In course/views.py
-def remove_accents(input_str):
-    nfkd_form = unicodedata.normalize('NFKD', input_str)
-    return ''.join([c for c in nfkd_form if not unicodedata.combining(c)])
-
 
 
 @login_required
@@ -1232,20 +1427,24 @@ def topic_delete(request, pk):
 
 def tag_add(request):
     if request.method == 'POST':
-        form = TagForm(request.POST or None)
+        # Lấy danh sách tag_names từ form và topic_id duy nhất
+        tag_names = request.POST.getlist('tags[]')  # Lấy tất cả giá trị tags[]
+        topic_ids = request.POST.getlist('topics[]')  # Lấy tất cả giá trị topics[] (chỉ có một topic)
 
-        tag_names = request.POST.getlist('tags[]')
-        topic_ids = request.POST.getlist('topics[]')  # Lấy danh sách topic_id từ form
-
-        if tag_names and topic_ids:
-            for name, topic_id in zip(tag_names, topic_ids):
-                if name.strip() and topic_id:
-                    # Tạo Tag mới với cả name và topic_id
-                    Tag.objects.create(name=name.strip(), topic_id=topic_id)
-            messages.success(request, 'Tags added successfully.')
-            return redirect('course:topic_tag_list')
+        # Kiểm tra xem topic_ids có giá trị hay không
+        if topic_ids:
+            topic_id = topic_ids[0]  # Lấy ID topic đầu tiên, vì chỉ có một topic được chọn
+            if tag_names:
+                for name in tag_names:
+                    if name.strip():  # Nếu tag name không rỗng
+                        # Tạo tag mới gắn với topic_id đã chọn
+                        Tag.objects.create(name=name.strip(), topic_id=topic_id)
+                messages.success(request, 'Tags added successfully.')
+                return redirect('course:topic_tag_list')
+            else:
+                messages.error(request, 'Please enter at least one tag name.')
         else:
-            messages.error(request, 'Please enter at least one tag name and select a topic for each tag.')
+            messages.error(request, 'Please select a topic for the tags.')
 
     else:
         form = TagForm()
