@@ -1,22 +1,36 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container">
-    <h2 class="my-4 text-center">Admin Notifications</h2>
+<div class="container my-5">
+    <h2 class="my-4 text-center text-primary">Notifications For All Users</h2>
+
+    <!-- Form tìm kiếm thông báo -->
+    <form method="GET" class="mb-4">
+        <div class="input-group shadow-sm">
+            <input type="text" name="search" class="form-control border-0 rounded-pill" placeholder="Search notifications..." value="{{ search_query }}">
+            <div class="input-group-append">
+                <button class="btn btn-primary rounded-pill" type="submit">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
+        </div>
+    </form>
 
     <!-- Nút "Add New Notification" chỉ hiển thị khi người dùng có quyền -->
     {% if is_manager %}
         <div class="d-flex justify-content-end mb-4">
-            <a href="{% url 'add_notification' %}" class="btn btn-success">+ Add New Notification</a>
+            <a href="{% url 'add_notification' %}" class="btn btn-success rounded-pill shadow-sm">
+                <i class="fas fa-plus"></i> Add New Notification
+            </a>
         </div>
     {% endif %}
 
     <!-- Hiển thị bảng với các thông báo -->
     <div class="table-responsive">
-        <table class="table table-hover table-bordered text-center align-middle">
+        <table class="table table-hover table-bordered text-center align-middle shadow-sm">
             <thead class="table-dark">
                 <tr>
-                    <th>#</th> <!-- Cột số thứ tự -->
+                    <th>#</th>
                     <th>Title</th>
                     <th>File</th>
                     <th>Created At</th>
@@ -28,31 +42,31 @@
             <tbody>
                 {% for notification in notifications %}
                 <tr>
-                    <!-- Số thứ tự được hiển thị bằng biến start_number + forloop.counter -->
                     <td>{{ start_number|add:forloop.counter }}</td>
-                    
-                    <!-- Tiêu đề là liên kết đến trang chi tiết thông báo -->
                     <td>
                         <a href="{% url 'notification_detail' notification.id %}" class="text-primary font-weight-bold">
-                            {{ notification.title|slice:":10" }}{% if notification.title|length > 10 %}...{% endif %}
+                            {{ notification.title|slice:":30" }}{% if notification.title|length > 30 %}...{% endif %}
                         </a>
                     </td>
-                    
                     <td>
                         {% if notification.file %}
-                            <a href="{% url 'download_file' notification.id %}" class="btn btn-sm btn-outline-primary">Download</a>
+                            <a href="{% url 'download_file' notification.id %}" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm">Download</a>
                         {% else %}
                             <span class="text-muted">No file attached</span>
                         {% endif %}
                     </td>
-                    
                     <td>{{ notification.created_at|date:"M d, Y H:i" }}</td>
-                    
-                    <!-- Các nút Edit và Delete chỉ hiển thị khi người dùng có quyền -->
                     {% if is_manager %}
                         <td>
-                            <a href="{% url 'update_notification' notification.id %}" class="btn btn-sm btn-outline-info me-1">Edit</a>
-                            <a href="{% url 'delete_notification' notification.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                            <a href="{% url 'update_notification' notification.id %}" class="btn btn-sm btn-outline-info rounded-pill me-1 shadow-sm">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <form action="{% url 'delete_notification' notification.id %}" method="POST" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill shadow-sm" onclick="return confirm('Are you sure you want to delete this notification?');">
+                                    <i class="fas fa-trash-alt"></i> Delete
+                                </button>
+                            </form>
                         </td>
                     {% endif %}
                 </tr>
@@ -94,4 +108,77 @@
         </nav>
     {% endif %}
 </div>
+
+<style>
+    /* Tăng cường hiệu ứng hover và làm bảng dễ nhìn hơn */
+    .table-hover tbody tr:hover {
+        background-color: #f1f1f1; /* Màu nền khi hover */
+        transition: background-color 0.3s ease; /* Hiệu ứng mượt mà */
+    }
+
+    /* Các nút "Add New" và hành động đẹp hơn */
+    .btn-success, .btn-outline-info, .btn-outline-danger {
+        border-radius: 20px; /* Bo góc cho các nút */
+        font-weight: bold; /* Làm đậm chữ nút */
+        padding: 8px 15px; /* Tăng kích thước nút để dễ nhấn */
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .btn-success:hover, .btn-outline-info:hover, .btn-outline-danger:hover {
+        transform: translateY(-2px); /* Hiệu ứng nâng nút lên khi hover */
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Hiệu ứng đổ bóng */
+    }
+
+    /* Cải thiện bảng */
+    .table {
+        border-radius: 10px; /* Bo góc cho bảng */
+        overflow: hidden; /* Giúp các góc bo không bị lộ ra */
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Thêm bóng mờ cho bảng */
+    }
+
+    /* Tăng cường màu sắc cho các tiêu đề */
+    .table-dark th {
+        background-color: #343a40;
+        color: white;
+    }
+
+    /* Tăng cường nút "Download" */
+    .btn-outline-primary {
+        border-radius: 15px;
+        padding: 5px 15px;
+    }
+
+    /* Điều chỉnh phân trang cho đẹp hơn */
+    .pagination {
+        margin-top: 30px;
+    }
+
+    .pagination .page-link {
+        border-radius: 20px;
+        padding: 10px 15px;
+        font-weight: bold;
+        transition: transform 0.3s ease;
+    }
+
+    .pagination .page-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #007bff;
+        border-color: #007bff;
+        color: white;
+    }
+
+    /* Tăng cường chữ và khoảng cách */
+    .text-primary {
+        font-weight: bold;
+    }
+
+    .font-weight-bold {
+        font-weight: 600;
+    }
+</style>
+
 {% endblock %}

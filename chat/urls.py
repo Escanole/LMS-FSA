@@ -14,7 +14,7 @@ urlpatterns = [
     path('group/<int:group_id>/remove_member/', views.remove_member_from_group_view, name='remove_member_from_group'),
     path('edit_message/<int:message_id>/', views.edit_message_view, name='edit_message'),
     path('delete_message/<int:message_id>/', views.delete_message_view, name='delete_message'),
-    # path('notifications/', views.notifications_view, name='notifications'),
+    path('message_report/', views.message_report_view, name='message_report'),
 ]
 
 
