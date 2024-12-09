@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+{% include "menuReport.html" %}
+
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Course Price Analysis Report</h2>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-md-6">
+            <!-- Top Prices Horizontal Bar Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Top 5 Premium Courses</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="topPricesChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Discounts Horizontal Bar Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Top 5 Best Discounts</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="topDiscountsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="col-md-6">
+            <!-- Scatter Plot -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Price Comparison (Original vs Final)</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="scatterPlot"></canvas>
+                </div>
+            </div>
+
+            <!-- Grouped Column Chart -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Discount Analysis</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="groupedChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Parse the JSON data
+    const priceChartData = JSON.parse('{{ price_chart_data|safe }}');
+    const discountChartData = JSON.parse('{{ discount_chart_data|safe }}');
+    const scatterData = JSON.parse('{{ scatter_data|safe }}');
+    const groupChartData = JSON.parse('{{ group_chart_data|safe }}');
+
+    // Top Prices Horizontal Bar Chart
+    new Chart(document.getElementById('topPricesChart'), {
+        type: 'bar',
+        data: {
+            labels: priceChartData.labels,
+            datasets: [{
+                label: 'Price ($)',
+                data: priceChartData.prices,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Top Discounts Horizontal Bar Chart
+    new Chart(document.getElementById('topDiscountsChart'), {
+        type: 'bar',
+        data: {
+            labels: discountChartData.labels,
+            datasets: [{
+                label: 'Discount (%)',
+                data: discountChartData.discounts,
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Scatter Plot
+    new Chart(document.getElementById('scatterPlot'), {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Courses',
+                data: scatterData.map(item => ({
+                    x: item.x,
+                    y: item.y
+                })),
+                backgroundColor: 'rgba(75, 192, 192, 0.5)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Original Price ($)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Final Price ($)'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const point = scatterData[context.dataIndex];
+                            return `${point.label}: Original $${point.x}, Final $${point.y}`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Grouped Column Chart
+    new Chart(document.getElementById('groupedChart'), {
+        type: 'bar',
+        data: {
+            labels: groupChartData.labels,
+            datasets: [
+                {
+                    label: 'Original Price',
+                    data: groupChartData.original_prices,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)'
+                },
+                {
+                    label: 'Final Price',
+                    data: groupChartData.final_prices,
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)'
+                },
+                {
+                    label: 'Savings',
+                    data: groupChartData.savings,
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Price ($)'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

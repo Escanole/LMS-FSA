@@ -16,6 +16,8 @@ from django.http import Http404
 from collections import defaultdict
 import calendar
 import json
+from department.models import Department
+from learning_path.models import LearningPath
 
 
 @login_required
@@ -428,77 +430,401 @@ def round_to_nearest_half(hour):
     return round(hour * 2) / 2
 
 def course_duration_report(request):
-    # Get the selected course from the GET parameters
     selected_course_id = request.GET.get('course', None)
+    selected_learning_path_id = request.GET.get('learning_path', None)
 
-    # Query to group durations by user and course
+    # Query durations grouped by course and user
     user_course_durations = (
         MaterialViewingDuration.objects
-        .values('material__session__course', 'user')  # Group by course and user
-        .annotate(total_time=Sum(F('time_spent')))  # Sum the duration for each group
+        .values('material__session__course', 'user')
+        .annotate(total_time=Sum(F('time_spent')))
     )
 
-    # Filter by selected course if provided
+    # Filter for the selected course if provided
     if selected_course_id:
+        user_course_durations = user_course_durations.filter(material__session__course=selected_course_id)
+
+    # Filter courses by selected learning path if provided
+    if selected_learning_path_id:
+        learning_path = LearningPath.objects.get(id=selected_learning_path_id)
+        courses_in_path = learning_path.steps.values_list('courses', flat=True)
         user_course_durations = user_course_durations.filter(
-            material__session__course=selected_course_id
+            material__session__course__in=courses_in_path
         )
 
-    # Prepare data for rendering
-    course_durations = {}
+    # Calculate total hours per course and user
+    course_user_hours = {}
+    course_total_hours = {}
     for entry in user_course_durations:
         course_id = entry['material__session__course']
         user_id = entry['user']
         total_time = entry['total_time']
 
-        # Convert time_spent (which is timedelta) to hours (float)
+        # Convert total_time (timedelta) to hours
         total_hours = total_time.total_seconds() / 3600 if total_time else 0
 
-        # Round to the nearest 0.5 hour
-        rounded_hours = round_to_nearest_half(total_hours)
+        # Aggregate total hours by course
+        if course_id not in course_total_hours:
+            course_total_hours[course_id] = 0
+        course_total_hours[course_id] += total_hours
 
-        if course_id not in course_durations:
-            course_durations[course_id] = {}
+        # Track hours by user and course
+        if course_id not in course_user_hours:
+            course_user_hours[course_id] = {}
+        course_user_hours[course_id][user_id] = round(total_hours, 2)  # Rounded to 2 decimal places
 
-        # Store rounded duration by user for the course in hours
-        course_durations[course_id][user_id] = rounded_hours
-
-    # Group users by the same time spent on the course
-    grouped_durations = {}
-    for course_id, user_data in course_durations.items():
-        for user_id, total_time in user_data.items():
-            if total_time not in grouped_durations:
-                grouped_durations[total_time] = 0
-            grouped_durations[total_time] += 1  # Count how many users spent this amount of time
-
-    # Prepare data for the chart
-    chart_labels = [f'{time} hours' for time in grouped_durations.keys()]
-    chart_data = list(grouped_durations.values())
-
-    # Optionally, retrieve course and user details for display
-    all_courses = Course.objects.in_bulk(course_durations.keys())
-    all_users = User.objects.in_bulk({user_id for user_data in course_durations.values() for user_id in user_data})
-
-    # Build human-readable data structure for the template
-    readable_durations = {}
-    for course_id, user_data in course_durations.items():
-        course_name = all_courses[course_id].course_name  # Get the course name
-        readable_durations[course_name] = {
-            all_users[user_id].username: total_time  # Get the username for each user
-            for user_id, total_time in user_data.items()
+    # Calculate percentages for the pie chart
+    total_hours_all_courses = sum(course_total_hours.values())
+    chart_data = [
+        {
+            'course_name': Course.objects.get(id=course_id).course_name,
+            'percentage': (hours / total_hours_all_courses) * 100 if total_hours_all_courses > 0 else 0
         }
+        for course_id, hours in course_total_hours.items()
+    ]
 
-    # Convert the Python dictionary to a JSON-serializable string
-    readable_durations_json = json.dumps(readable_durations)
+    # Prepare data for chart rendering
+    chart_labels = [entry['course_name'] for entry in chart_data]
+    chart_percentages = [entry['percentage'] for entry in chart_data]
 
-    # Get all courses for the filter dropdown
+    # Fetch course and user details
+    all_courses = Course.objects.in_bulk(course_total_hours.keys())
+    all_users = User.objects.in_bulk({user_id for user_data in course_user_hours.values() for user_id in user_data})
+
+    # Build human-readable data structure for the table
+    readable_durations = {
+        all_courses[course_id].course_name: {
+            all_users[user_id].username: hours
+            for user_id, hours in user_data.items()
+        }
+        for course_id, user_data in course_user_hours.items()
+    }
+
+    # Fetch all courses for the dropdown
     all_courses_names = Course.objects.values('id', 'course_name')
+    all_learning_paths = LearningPath.objects.all()
 
     return render(request, 'reports/course_duration_report.html', {
-        'readable_durations_json': readable_durations_json,
+        'chart_labels': chart_labels,
+        'chart_percentages': chart_percentages,
         'readable_durations': readable_durations,
         'all_courses_names': all_courses_names,
         'selected_course_id': selected_course_id,
-        'chart_labels': chart_labels,
-        'chart_data': chart_data,
+        'all_learning_paths': all_learning_paths,
+        'selected_learning_path_id': selected_learning_path_id,
+    })
+
+
+def price_report(request):
+    """Generate comprehensive price analysis report for courses"""
+
+    # Top 5 courses with highest original price
+    top_price_courses = Course.objects.filter(published=True).order_by('-price')[:5]
+    price_chart_data = {
+        'labels': [course.course_name for course in top_price_courses],
+        'prices': [float(course.price) for course in top_price_courses]
+    }
+
+    # Top 5 courses with highest discount percentage
+    top_discount_courses = Course.objects.filter(
+        published=True,
+        discount__gt=0
+    ).order_by('-discount')[:5]
+    discount_chart_data = {
+        'labels': [course.course_name for course in top_discount_courses],
+        'discounts': [float(course.discount) for course in top_discount_courses]
+    }
+
+    # Lowest price courses after discount
+    lowest_price_courses = Course.objects.filter(published=True).order_by('price')
+    lowest_after_discount = []
+
+    for course in lowest_price_courses:
+        discounted_price = course.price * (1 - course.discount / 100)
+        lowest_after_discount.append({
+            'course': course,
+            'original_price': float(course.price),
+            'discount': float(course.discount),
+            'final_price': float(discounted_price)
+        })
+
+    # Sort by final price and get top 5 cheapest
+    lowest_after_discount.sort(key=lambda x: x['final_price'])
+    lowest_after_discount = lowest_after_discount[:5]
+
+    # Prepare scatter plot data
+    scatter_data = [{
+        'x': item['original_price'],
+        'y': item['final_price'],
+        'label': item['course'].course_name
+    } for item in lowest_after_discount]
+
+    # Discount rate analysis
+    discount_analysis = []
+    courses_with_discount = Course.objects.filter(
+        published=True,
+        discount__gt=0
+    ).order_by('-discount')
+
+    for course in courses_with_discount:
+        original_price = float(course.price)
+        discount_amount = original_price * (float(course.discount) / 100)
+        final_price = original_price - discount_amount
+
+        discount_analysis.append({
+            'course': course.course_name,
+            'original_price': original_price,
+            'final_price': final_price,
+            'savings': discount_amount
+        })
+
+    # Prepare grouped column chart data, So sánh giá gốc và giá sau chiết khấu cho từng khóa học.
+    group_chart_data = {
+        'labels': [item['course'] for item in discount_analysis],
+        'original_prices': [item['original_price'] for item in discount_analysis],
+        'final_prices': [item['final_price'] for item in discount_analysis],
+        'savings': [item['savings'] for item in discount_analysis]
+    }
+    context = {
+        'price_chart_data': json.dumps(price_chart_data),
+        'discount_chart_data': json.dumps(discount_chart_data),
+        'scatter_data': json.dumps(scatter_data),
+        'group_chart_data': json.dumps(group_chart_data),
+        'lowest_after_discount': lowest_after_discount,
+        'discount_analysis': discount_analysis
+    }
+
+    return render(request, 'reports/price_report.html', context)
+
+
+def department_report(request):
+    """Generate comprehensive department analysis report"""
+
+    # 1. Average number of courses per department
+    departments = Department.objects.all()
+    dept_course_data = {
+        'labels': [],
+        'course_counts': []
+    }
+
+    for dept in departments:
+        dept_course_data['labels'].append(dept.name)
+        dept_course_data['course_counts'].append(dept.courses.count())
+    # Calculate average
+    total_courses = sum(dept_course_data['course_counts'])
+    avg_courses = total_courses / len(departments) if departments else 0
+
+    # 2. Topic distribution across departments
+    topic_distribution = {}
+    for dept in departments:
+        dept_topics = set()  # Use set to avoid duplicate topics
+        for course in dept.courses.all():
+            for tag in course.tags.all():
+                dept_topics.add(tag.topic.name)
+
+        topic_distribution[dept.name] = list(dept_topics)
+
+    # Convert to chart data
+    topic_chart_data = {
+        'labels': list(topic_distribution.keys()),  # Department names
+        'datasets': []
+    }
+
+    # Get unique topics
+    all_topics = set()
+    for topics in topic_distribution.values():
+        all_topics.update(topics)
+
+    # Create dataset for each topic
+    for topic in all_topics:
+        dataset = {
+            'label': topic,
+            'data': []
+        }
+        for dept in topic_distribution:
+            dataset['data'].append(1 if topic in topic_distribution[dept] else 0)
+        topic_chart_data['datasets'].append(dataset)
+    # 3. Enrollment percentage by department
+    enrollment_data = {
+        'labels': [],
+        'percentages': []
+    }
+
+    for dept in departments:
+        total_users = dept.users.count()
+        if total_users > 0:
+            enrolled_users = 0
+            for course in dept.courses.all():
+                enrolled_users += course.enrollments.filter(
+                    student__in=dept.users.all()
+                ).distinct().count()
+
+            enrollment_percentage = (enrolled_users / total_users) * 100
+
+            enrollment_data['labels'].append(dept.name)
+            enrollment_data['percentages'].append(round(enrollment_percentage, 2))
+
+    location_course_data = {
+        'labels': [],  # Department names
+        'datasets': {}  # Will hold data for each location
+    }
+
+    # Get all unique locations
+    locations = set()
+    for dept in departments:
+        if dept.location:  # Make sure location exists
+            # Convert Location object to string using its string representation
+            location_str = str(dept.location)
+            locations.add(location_str)
+            location_course_data['labels'].append(dept.name)
+
+    # Initialize datasets for each location
+    for location in locations:
+        location_course_data['datasets'][location] = []
+
+    # Fill in the data
+    for dept in departments:
+        # Convert location to string for comparison
+        dept_location = str(dept.location) if dept.location else None
+        for location in locations:
+            if dept_location == location:
+                location_course_data['datasets'][location].append(dept.courses.count())
+            else:
+                location_course_data['datasets'][location].append(0)
+
+    # Convert to format expected by Chart.js
+    location_datasets = []
+    for location, data in location_course_data['datasets'].items():
+        location_datasets.append({
+            'label': location,
+            'data': data
+        })
+    context = {
+        'dept_course_data': json.dumps(dept_course_data),
+        'topic_chart_data': json.dumps(topic_chart_data),
+        'enrollment_data': json.dumps(enrollment_data),
+        'avg_courses': round(avg_courses, 2),
+        'location_course_data': json.dumps({
+            'labels': location_course_data['labels'],
+            'datasets': location_datasets
+        })
+    }
+
+    return render(request, 'reports/department_report.html', context)
+
+def course_users_report(request):
+    selected_course = request.GET.get('course', None)
+    selected_user = request.GET.get('user', None)
+
+    # Fetch all enrollments, optionally filtered by selected course or user
+    enrollments = Enrollment.objects.all()
+
+    if selected_course:
+        enrollments = enrollments.filter(course__id=selected_course)
+
+    if selected_user:
+        enrollments = enrollments.filter(student__id=selected_user)
+
+    # Prepare data for the report
+    report_data = []
+    for enrollment in enrollments:
+        course = enrollment.course
+        user = enrollment.student
+        enrollment_date = enrollment.date_enrolled
+        unenrollment_date = enrollment.date_unenrolled if enrollment.date_unenrolled else "Still enrolled"
+        come_back_count = enrollment.come_back
+
+        # Calculate total time spent on the course by the user
+        total_time_spent = MaterialViewingDuration.objects.filter(
+            user=user,
+            material__session__course=course
+        ).aggregate(total_time=Sum(F('time_spent')))['total_time']
+
+        total_time_hours = total_time_spent.total_seconds() / 3600 if total_time_spent else 0
+
+        report_data.append({
+            'user': user.username,
+            'course': course.course_name,
+            'enrollment_date': enrollment_date,
+            'unenrollment_date': unenrollment_date,
+            'come_back_count': come_back_count,
+            'total_time_spent': round(total_time_hours, 2),
+        })
+
+    # Fetch courses for the dropdown
+    all_courses = Course.objects.all()
+    all_users = User.objects.all()
+
+    return render(request, 'reports/course_users_report.html', {
+        'report_data': report_data,
+        'all_courses': all_courses,
+        'all_users': all_users,
+        'selected_course': selected_course,
+        'selected_user': selected_user,
+    })
+
+
+def material_duration_report(request):
+    selected_course = request.GET.get('course', None)
+    selected_user = request.GET.get('user', None)
+
+    # Fetch all sessions, optionally filtered by selected course
+    sessions = Session.objects.all()
+
+    if selected_course:
+        sessions = sessions.filter(course__id=selected_course)
+
+    # Prepare data for the report
+    report_data = []
+    for session in sessions:
+        course = session.course
+        session_name = session.name 
+
+        # Fetch all course materials for the current session
+        course_materials = CourseMaterial.objects.filter(session=session)
+
+        for material in course_materials:
+            material_name = material.title
+
+            # Filter MaterialViewingDuration based on material and user (if selected)
+            duration_query = MaterialViewingDuration.objects.filter(material=material)
+
+            if selected_user:
+                duration_query = duration_query.filter(user__id=selected_user)
+
+            # Initialize variables for time-related fields
+            total_time_spent = duration_query.aggregate(total_time=Sum(F('time_spent')))['total_time']
+            total_time_hours = total_time_spent.total_seconds() / 3600 if total_time_spent else 0
+            come_back_count = duration_query.aggregate(total_come_backs=Sum('come_back'))['total_come_backs'] or 0
+
+            # If no durations found, set start_time and end_time to None
+            start_time = None
+            end_time = None
+
+            # If there are duration records, get the first and last times
+            if duration_query.exists():
+                start_time = duration_query.first().start_time
+                end_time = duration_query.last().end_time
+
+            # Prepare data for each material in the session
+            report_data.append({
+                'material': material_name,
+                'course': course.course_name,
+                'session': session_name,
+                'total_time_spent': round(total_time_hours, 2),
+                'start_time': start_time,
+                'end_time': end_time,
+                'come_back_count': come_back_count,
+            })
+
+    # Fetch courses and users for the dropdown
+    all_courses = Course.objects.all()
+    all_users = User.objects.all()  # Fetching all users
+
+    return render(request, 'reports/material_duration_report.html', {
+        'report_data': report_data,
+        'all_courses': all_courses,
+        'all_users': all_users,
+        'selected_course': selected_course,
+        'selected_user': selected_user,
     })

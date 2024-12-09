@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+{% include "menuReport.html" %}
+<div class="container-fluid mt-4">
+    <h2 class="mb-4">Department Analysis Report</h2>
+    <!-- First Row - Two Charts -->
+    <div class="row mb-4">
+        <!-- Course Distribution -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h4>Course Distribution by Department</h4>
+                    <small class="text-muted">Average courses per department: {{ avg_courses }}</small>
+                </div>
+                <div class="card-body">
+                    <canvas id="courseDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Topic Distribution -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h4>Topic Distribution Across Departments</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="topicDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Second Row - Two Charts -->
+    <div class="row mb-4">
+        <!-- Location Course Distribution -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h4>Courses by Department and Location</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="locationCourseChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Enrollment Percentage -->
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h4>Department Enrollment Percentage</h4>
+                </div>
+                <div class="card-body">
+                    <canvas id="enrollmentChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Parse the JSON data
+    const deptCourseData = JSON.parse('{{ dept_course_data|safe }}');
+    const topicChartData = JSON.parse('{{ topic_chart_data|safe }}');
+    const enrollmentData = JSON.parse('{{ enrollment_data|safe }}');
+    // Course Distribution Chart
+    new Chart(document.getElementById('courseDistributionChart'), {
+        type: 'bar',
+        data: {
+            labels: deptCourseData.labels,
+            datasets: [{
+                label: 'Number of Courses',
+                data: deptCourseData.course_counts,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Courses'
+                    }
+                }
+            }
+        }
+    });
+    // Topic Distribution Chart
+    new Chart(document.getElementById('topicDistributionChart'), {
+        type: 'bar',
+        data: {
+            labels: topicChartData.labels,
+            datasets: topicChartData.datasets.map((dataset, index) => ({
+                label: dataset.label,
+                data: dataset.data,
+                backgroundColor: `hsla(${index * 360 / topicChartData.datasets.length}, 70%, 60%, 0.5)`,
+                borderColor: `hsla(${index * 360 / topicChartData.datasets.length}, 70%, 60%, 1)`,
+                borderWidth: 1,
+            }))
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    stacked: true
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Topics'
+                    }
+                }
+            }
+        }
+    });
+    // Enrollment Percentage Chart
+    new Chart(document.getElementById('enrollmentChart'), {
+        type: 'doughnut',
+        data: {
+            labels: enrollmentData.labels,
+            datasets: [{
+                data: enrollmentData.percentages,
+                backgroundColor: enrollmentData.labels.map((_, index) => 
+                    `hsla(${index * 360 / enrollmentData.labels.length}, 70%, 60%, 0.5)`
+                )
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'right'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.raw}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    // Parse the location course data
+    const locationCourseData = JSON.parse('{{ location_course_data|safe }}');
+    // Location Course Distribution Chart
+    new Chart(document.getElementById('locationCourseChart'), {
+        type: 'bar',
+        data: {
+            labels: locationCourseData.labels,
+            datasets: locationCourseData.datasets.map((dataset, index) => ({
+                label: dataset.label,
+                data: dataset.data,
+                backgroundColor: `hsla(${index * 360 / locationCourseData.datasets.length}, 70%, 60%, 0.5)`,
+                borderColor: `hsla(${index * 360 / locationCourseData.datasets.length}, 70%, 60%, 1)`,
+                borderWidth: 1
+            }))
+        },
+        options: {
+            indexAxis: 'y',  // This makes it horizontal
+            responsive: true,
+            scales: {
+                x: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Courses'
+                    }
+                },
+                y: {
+                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Departments'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'Locations'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw} courses`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+<style>
+    .card {
+        margin-bottom: 20px;
+        height: 400px; /* Fixed height for all cards */
+    }
+    
+    .card-body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+    }
+    
+    canvas {
+        max-height: 100%;
+        width: 100% !important;
+    }
+</style>
+{% endblock %}

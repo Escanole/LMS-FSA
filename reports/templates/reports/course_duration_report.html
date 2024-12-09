@@ -13,6 +13,15 @@
             </option>
         {% endfor %}
     </select>
+    <label for="learningPathFilter">Select Learning Path:</label>
+    <select name="learning_path" id="learningPathFilter" onchange="this.form.submit()">
+        <option value="">All Learning Paths</option>
+        {% for path in all_learning_paths %}
+            <option value="{{ path.id }}" {% if path.id == selected_learning_path_id %}selected{% endif %}>
+                {{ path.title }}
+            </option>
+        {% endfor %}
+    </select>
 </form>
 
 <!-- Pie Chart -->
@@ -44,31 +53,24 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Prepare data for the pie chart (from the backend)
     const chartLabels = {{ chart_labels|safe }};
-    const chartData = {{ chart_data|safe }};
+    const chartPercentages = {{ chart_percentages|safe }};
 
-    console.log('Chart Labels:', chartLabels);
-    console.log('Chart Data:', chartData);
-
-    // If no data for the selected course, display a warning and stop further execution
-    if (chartData.length === 0) {
+    if (chartPercentages.length === 0) {
         console.warn('No data available for the selected course.');
     } else {
-        // Call the function to generate the pie chart
-        generatePieChart(chartLabels, chartData);
+        generatePieChart(chartLabels, chartPercentages);
     }
 
-    function generatePieChart(labels, data) {
+    function generatePieChart(labels, percentages) {
         const ctx = document.getElementById('courseDurationPieChart').getContext('2d');
 
-        // Generate the pie chart
         new Chart(ctx, {
             type: 'pie',
             data: {
-                labels: labels,  // Time spent labels (e.g., '1 hour', '4 hours')
+                labels: labels,  // Course names
                 datasets: [{
-                    data: data,  // Count of users per time spent
+                    data: percentages,  // Percentages of total hours
                     backgroundColor: [
                         'rgba(255, 99, 132, 0.7)',
                         'rgba(54, 162, 235, 0.7)',
@@ -83,7 +85,15 @@
                 plugins: {
                     title: {
                         display: true,
-                        text: 'Time Spent on Selected Course',
+                        text: 'Percentage of Time Spent on Courses',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw.toFixed(2); // Format percentage to 2 decimals
+                                return `${context.label}: ${value}%`;
+                            }
+                        }
                     },
                 },
             },
