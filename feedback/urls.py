@@ -15,4 +15,5 @@ urlpatterns = [
     path('coursefeedback/<int:pk>/helpful/', views.helpful_rate, name='helpful_rate'),
     path('chart-data/', views.feedback_chart_data, name='feedback_chart_data'),
     path('combined/<int:course_id>/', views.combined_feedback, name='combined_feedback'),
+    # path('all-feedback/', views.all_feedback, name='all_feedback'),
 ]

@@ -7,23 +7,9 @@ from django.contrib.auth import get_user_model
 from module_group.models import ModuleGroup, Module
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import F, FloatField, ExpressionWrapper, Count
+from django.db.models import F, FloatField, ExpressionWrapper, Count, Q, Avg
 from django.http import Http404, JsonResponse
 
-'''def feedback_list(request):
-    module_groups = ModuleGroup.objects.all()
-    modules = Module.objects.all()
-    instructor_feedbacks = InstructorFeedback.objects.all()
-    course_feedbacks = CourseFeedback.objects.all()
-    training_feedbacks = TrainingProgramFeedback.objects.all()
-
-    return render(request, 'feedback_list.html', {
-        'instructor_feedbacks': instructor_feedbacks,
-        'course_feedbacks': course_feedbacks,
-        'training_feedbacks': training_feedbacks,
-        'module_groups': module_groups,
-        'modules': modules
-    })'''
 
 User = get_user_model()
 
@@ -34,27 +20,101 @@ def feedback_list(request):
     course_instructors = courses.values_list('instructor', flat=True).distinct()
     instructors = User.objects.filter(id__in=course_instructors)
 
-    # Separate instructor and course feedback for the first two tabs
-    instructor_feedbacks_all = InstructorFeedback.objects.all()
+    # Get the query parameters for filtering and searching
+    search_term = request.GET.get('search', '').strip().lower()
+    course_filter = request.GET.get('course', '').strip().lower()
+    instructor_search = request.GET.get('instructor_search', '').strip().lower()
+    instructor_filter = request.GET.get('instructor', '').strip().lower()
+    course_instructor_filter = request.GET.get('course_instructor', '').strip().lower()
+
+    # Sorting parameters for course feedback
+    course_sort_order = request.GET.get('course_sort', 'asc')  # Default to ascending
+    instructor_sort_order = request.GET.get('instructor_sort', 'asc')  # Default to ascending
+
+    # Filter course feedback
     course_feedbacks_all = CourseFeedback.objects.all()
 
+    if search_term:
+        course_feedbacks_all = course_feedbacks_all.filter(
+            Q(course__course_name__icontains=search_term) |
+            Q(course_comment__icontains=search_term) |
+            Q(material_comment__icontains=search_term)
+        )
+
+    if course_filter:
+        course_feedbacks_all = course_feedbacks_all.filter(course__course_name__icontains=course_filter)
+
+    # Annotate each course feedback with the average rating
+    course_feedbacks_all = course_feedbacks_all.annotate(
+        average_rating=(
+            (F('course_material') + F('clarity_of_explanation') +
+            F('course_structure') + F('practical_applications') +
+            F('support_materials')) / 5.0
+        )
+    )
+
+    # Sorting course feedback by average rating
+    if course_sort_order == 'desc':
+        course_feedbacks_all = course_feedbacks_all.order_by('-average_rating')
+    else:
+        course_feedbacks_all = course_feedbacks_all.order_by('average_rating')
+
     # Pagination for Course Feedback Tab
+    course_page_number = request.GET.get('course_page', 1)
     course_paginator = Paginator(course_feedbacks_all, 8)
-    course_page_obj = course_paginator.get_page(request.GET.get('course_page'))
+    try:
+        course_page_obj = course_paginator.page(course_page_number)
+    except:
+        course_page_obj = course_paginator.page(1)
+
+    # Filter instructor feedback
+    instructor_feedbacks_all = InstructorFeedback.objects.all()
+
+    if instructor_search:
+        instructor_feedbacks_all = instructor_feedbacks_all.filter(
+            Q(instructor__username__icontains=instructor_search) |
+            Q(comments__icontains=instructor_search)
+        )
+
+    if instructor_filter:
+        instructor_feedbacks_all = instructor_feedbacks_all.filter(instructor__username__icontains=instructor_filter)
+
+    if course_instructor_filter:
+        instructor_feedbacks_all = instructor_feedbacks_all.filter(course__course_name__icontains=course_instructor_filter)
+
+    # Annotate each instructor feedback with the average rating
+    instructor_feedbacks_all = instructor_feedbacks_all.annotate(
+        average_rating=(
+            (F('course_knowledge') + F('communication_skills') +
+            F('approachability') + F('engagement') + F('professionalism')) / 5.0
+        )
+    )
+
+    # Sorting instructor feedback by average rating
+    if instructor_sort_order == 'desc':
+        instructor_feedbacks_all = instructor_feedbacks_all.order_by('-average_rating')
+    else:
+        instructor_feedbacks_all = instructor_feedbacks_all.order_by('average_rating')
 
     # Pagination for Instructor Feedback Tab
+    instructor_page_number = request.GET.get('instructor_page', 1)
     instructor_paginator = Paginator(instructor_feedbacks_all, 8)
-    instructor_page_obj = instructor_paginator.get_page(request.GET.get('instructor_page'))
+    try:
+        instructor_page_obj = instructor_paginator.page(instructor_page_number)
+    except:
+        instructor_page_obj = instructor_paginator.page(1)
 
     # Render data for all tabs
     return render(request, 'feedback_list.html', {
         'courses': courses,
         'instructors': instructors,
-        'module_groups': ModuleGroup.objects.all(),
-        'modules': Module.objects.all(),
-        'instructor_page_obj': instructor_page_obj,  # For Instructor Feedback Tab
-        'course_page_obj': course_page_obj,  # For Course Feedback Tab
+        'course_page_obj': course_page_obj,
+        'instructor_page_obj': instructor_page_obj,
+        'course_feedbacks_all': course_page_obj.object_list,
+        'instructor_feedbacks_all': instructor_page_obj.object_list,
     })
+
+
 
 
 def feedback_chart_data(request):
@@ -285,14 +345,14 @@ def helpful_rate(request, pk):
     return redirect('feedback:course_all_feedback', course_id=feedback.course.id)
 
 
+
 def combined_feedback(request, course_id):
     course = get_object_or_404(Course, id=course_id)
     instructor = course.instructor
-
     if request.method == 'POST':
         course_form = CourseFeedbackForm(request.POST)
         instructor_form = InstructorFeedbackForm(request.POST)
-        
+
         # Check if both forms are valid
         if course_form.is_valid() and instructor_form.is_valid():
             print("Get IN")
@@ -300,19 +360,17 @@ def combined_feedback(request, course_id):
             course_feedback = course_form.save(commit=False)
             course_feedback.student = request.user
             course_feedback.course = course
-
             course_feedback.course_comment = course_form.cleaned_data.get('course_comment')
             course_feedback.material_comment = course_form.cleaned_data.get('material_comment')
-
             course_feedback.save()
-            
+
             # Save instructor feedback
             instructor_feedback = instructor_form.save(commit=False)
             instructor_feedback.student = request.user
             instructor_feedback.instructor = instructor
             instructor_feedback.course = course
             instructor_feedback.save()
-            
+
             messages.success(request, 'Both course and instructor feedback submitted successfully.')
             return redirect('student_portal:course_detail', pk=course.id)
         else:
@@ -320,13 +378,47 @@ def combined_feedback(request, course_id):
     else:
         course_form = CourseFeedbackForm()
         instructor_form = InstructorFeedbackForm()
-
     context = {
         'course': course,
         'instructor': instructor,
         'course_form': course_form,
         'instructor_form': instructor_form,
     }
-    
-    return render(request, 'course_ins_feedback.html', context)
 
+    return render(request, 'feedback_course_instructor.html', context)
+
+
+def all_feedback(request):
+    course_feedbacks = CourseFeedback.objects.select_related('course', 'student').annotate(
+        average_rating=(
+            (F('course_material') + F('clarity_of_explanation') +
+             F('course_structure') + F('practical_applications') +
+             F('support_materials')) / 5.0
+        )
+    ).order_by('-created_at')
+
+    instructor_feedbacks = InstructorFeedback.objects.select_related('instructor', 'course', 'student').annotate(
+        average_rating=(
+            (F('course_knowledge') + F('communication_skills') +
+             F('approachability') + F('engagement') + F('professionalism')) / 5.0
+        )
+    ).order_by('-created_at')
+
+    return JsonResponse({
+        'course_feedbacks': [{
+            'id': f.id,
+            'course_name': f.course.course_name,
+            'average_rating': float(f.average_rating),
+            'material_comment': f.material_comment,
+            'course_comment': f.course_comment,
+            'created_at': f.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for f in course_feedbacks],
+        'instructor_feedbacks': [{
+            'id': f.id,
+            'instructor_name': f.instructor.username,
+            'course_name': f.course.course_name,
+            'average_rating': float(f.average_rating),
+            'comments': f.comments,
+            'created_at': f.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for f in instructor_feedbacks]
+    })
